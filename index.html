@@ -1,0 +1,1027 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+  />
+  <title>解憂藥局會員</title>
+
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Noto Sans TC", "Segoe UI", sans-serif;
+      background: #f7f7f7;
+      color: #253238;
+    }
+
+    button,
+    input,
+    textarea {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+      cursor: pointer;
+    }
+
+    .loading,
+    .error-page {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      font-size: 20px;
+      text-align: center;
+    }
+
+    .error-page {
+      color: #9b1c1c;
+    }
+
+    .app-shell {
+      min-height: 100vh;
+      background: #fff;
+    }
+
+    .hero {
+      background: linear-gradient(140deg, #202020, #4b4742 60%, #221d1d);
+      color: white;
+      padding: env(safe-area-inset-top) 18px 0;
+    }
+
+    .topbar {
+      height: 70px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .top-icon {
+      font-size: 30px;
+      line-height: 1;
+      opacity: 0.95;
+    }
+
+    .title {
+      font-size: 27px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+    }
+
+    .member-card {
+      position: relative;
+      min-height: 190px;
+      border-radius: 14px;
+      overflow: hidden;
+      background: radial-gradient(
+        circle at 70% 35%,
+        #fff7a8 0,
+        #c9ad3f 28%,
+        #62552e 58%,
+        #24211a 100%
+      );
+      box-shadow: 0 14px 30px rgba(0, 0, 0, 0.22);
+      padding: 18px;
+    }
+
+    .logo {
+      width: 110px;
+      height: 40px;
+      background: rgba(255, 255, 255, 0.86);
+      color: #111;
+      display: grid;
+      place-items: center;
+      font-weight: 900;
+      margin-bottom: 52px;
+    }
+
+    .card-name {
+      font-size: 27px;
+      font-weight: 900;
+      text-shadow: 0 1px 1px rgba(255, 255, 255, 0.35);
+    }
+
+    .card-level {
+      margin-top: 8px;
+      font-size: 16px;
+    }
+
+    .avatar {
+      position: absolute;
+      width: 132px;
+      height: 132px;
+      border-radius: 999px;
+      object-fit: cover;
+      background: #eee;
+      border: 6px solid rgba(255, 255, 255, 0.9);
+      left: 50%;
+      top: 28px;
+      transform: translateX(-50%);
+    }
+
+    .points-pill {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      background: rgba(0, 0, 0, 0.5);
+      color: #ffe84d;
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-weight: 800;
+    }
+
+    .barcode-button {
+      position: absolute;
+      right: 14px;
+      bottom: 14px;
+      background: rgba(0, 0, 0, 0.42);
+      color: white;
+      border-radius: 12px;
+      padding: 8px 10px;
+      display: flex;
+      gap: 5px;
+      align-items: center;
+    }
+
+    .quick-tabs {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      margin-top: 18px;
+    }
+
+    .quick-tabs button {
+      color: rgba(255, 255, 255, 0.66);
+      background: transparent;
+      padding: 10px 4px 16px;
+      border-bottom: 4px solid transparent;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      font-size: 15px;
+    }
+
+    .quick-tabs .tab-icon {
+      font-size: 26px;
+      line-height: 1;
+    }
+
+    .quick-tabs button.active {
+      color: white;
+      border-bottom-color: #ffe500;
+      font-weight: 900;
+    }
+
+    .content {
+      background: #fff;
+      border-radius: 22px 22px 0 0;
+      margin-top: -1px;
+      padding: 20px 18px 60px;
+      min-height: 50vh;
+    }
+
+    .list {
+      display: grid;
+      gap: 18px;
+    }
+
+    .activity-card,
+    .coupon-card {
+      background: #fff;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
+    }
+
+    .activity-card img,
+    .coupon-card img {
+      width: 100%;
+      display: block;
+      max-height: 190px;
+      object-fit: cover;
+      background: #eee;
+    }
+
+    .activity-card h3,
+    .coupon-card h3 {
+      margin: 14px 14px 4px;
+      font-size: 20px;
+      color: #263b43;
+    }
+
+    .activity-card p,
+    .coupon-card p {
+      margin: 6px 14px;
+      color: #5a676b;
+      line-height: 1.55;
+    }
+
+    .activity-card span,
+    .coupon-card span {
+      display: block;
+      padding: 8px 14px 16px;
+      color: #8a8f90;
+    }
+
+    .empty {
+      padding: 40px 18px;
+      text-align: center;
+      color: #667;
+    }
+
+    .empty h2 {
+      color: #253238;
+    }
+
+    .modal-mask {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.62);
+      display: flex;
+      align-items: flex-end;
+      z-index: 20;
+    }
+
+    .modal-card {
+      position: relative;
+      width: 100%;
+      background: white;
+      color: #333;
+      border-radius: 22px 22px 0 0;
+      padding: 26px 24px 36px;
+      text-align: center;
+      animation: slideUp 0.18s ease-out;
+    }
+
+    @keyframes slideUp {
+      from {
+        transform: translateY(30px);
+        opacity: 0.7;
+      }
+
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    .icon-close {
+      position: absolute;
+      top: 22px;
+      right: 22px;
+      background: transparent;
+      color: #333;
+      font-size: 36px;
+      line-height: 1;
+    }
+
+    .modal-card h2 {
+      margin: 6px 0 26px;
+      font-size: 25px;
+    }
+
+    .barcode-box {
+      display: flex;
+      justify-content: center;
+      margin: 0 auto 18px;
+      overflow: hidden;
+    }
+
+    .barcode-svg {
+      width: min(100%, 590px);
+      height: 88px;
+    }
+
+    .member-code {
+      letter-spacing: 5px;
+      font-size: 22px;
+      margin-bottom: 24px;
+      word-break: break-all;
+    }
+
+    .qr-wrap {
+      display: flex;
+      justify-content: center;
+    }
+
+    .hint {
+      color: #808080;
+      font-weight: 700;
+      line-height: 1.7;
+      margin: 24px 6px 0;
+    }
+
+    .verify-page,
+    .staff-page {
+      min-height: 100vh;
+      background: linear-gradient(140deg, #1e1e1e, #504637);
+      padding: 40px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .verify-card,
+    .staff-card {
+      width: min(460px, 100%);
+      background: white;
+      border-radius: 20px;
+      padding: 24px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.18);
+    }
+
+    .verify-card h1,
+    .staff-card h1 {
+      margin-top: 0;
+    }
+
+    input,
+    textarea {
+      width: 100%;
+      border: 1px solid #d7d7d7;
+      border-radius: 12px;
+      padding: 14px;
+      margin: 8px 0;
+      background: #fff;
+    }
+
+    textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+
+    .verify-card button,
+    .staff-card button {
+      width: 100%;
+      border-radius: 12px;
+      padding: 14px;
+      margin-top: 10px;
+      background: #111;
+      color: white;
+      font-weight: 900;
+    }
+
+    .verify-card button:disabled {
+      background: #aaa;
+    }
+
+    .debug-code {
+      background: #fff8ca;
+      color: #5d4a00;
+      padding: 10px;
+      border-radius: 10px;
+      margin: 8px 0;
+    }
+
+    .message {
+      margin-top: 12px;
+      color: #78410d;
+      font-weight: 700;
+      white-space: pre-wrap;
+    }
+
+    .member-result {
+      margin-top: 14px;
+      background: #f5f5f5;
+      border-radius: 14px;
+      padding: 14px;
+    }
+
+    @media (min-width: 780px) {
+      .app-shell {
+        max-width: 480px;
+        margin: 0 auto;
+        box-shadow: 0 0 0 1px #eee;
+      }
+
+      .modal-mask {
+        align-items: center;
+        justify-content: center;
+      }
+
+      .modal-card {
+        max-width: 480px;
+        border-radius: 22px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div id="app" class="loading">解憂藥局會員資料載入中...</div>
+
+  <script>
+    /**
+     * 你只需要改這三個設定
+     */
+    const LIFF_ID = '你的 LIFF ID';
+    const GAS_API_URL = '你的 Apps Script Web App URL';
+    const STORE_NAME = '解憂藥局';
+
+    const app = document.getElementById('app');
+
+    const state = {
+      loading: true,
+      error: '',
+      idToken: '',
+      profile: null,
+      member: null,
+      activities: [],
+      coupons: [],
+      tab: 'activity',
+      showBarcode: false,
+    };
+
+    function escapeHtml(value) {
+      return String(value ?? '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+    }
+
+    async function post(action, payload = {}) {
+      if (!GAS_API_URL || GAS_API_URL.includes('你的')) {
+        throw new Error('尚未設定 GAS_API_URL');
+      }
+
+      const res = await fetch(GAS_API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'text/plain;charset=utf-8',
+        },
+        body: JSON.stringify({
+          action,
+          ...payload,
+        }),
+      });
+
+      const json = await res.json();
+
+      if (!json.success) {
+        throw new Error(json.message || 'API 發生錯誤');
+      }
+
+      return json.data;
+    }
+
+    async function initLineLogin() {
+      if (!LIFF_ID || LIFF_ID.includes('你的')) {
+        throw new Error('尚未設定 LIFF_ID');
+      }
+
+      await liff.init({
+        liffId: LIFF_ID,
+      });
+
+      if (!liff.isLoggedIn()) {
+        liff.login({
+          redirectUri: window.location.href,
+        });
+        return null;
+      }
+
+      const profile = await liff.getProfile();
+      const idToken = liff.getIDToken();
+
+      if (!idToken) {
+        throw new Error('無法取得 LINE ID Token，請確認 LIFF scope 有 openid/profile');
+      }
+
+      return {
+        profile,
+        idToken,
+      };
+    }
+
+    function setState(patch) {
+      Object.assign(state, patch);
+      render();
+    }
+
+    function render() {
+      const path = window.location.pathname;
+
+      if (path.endsWith('/pos-scan') || path.includes('/pos-scan')) {
+        renderStaffScanPage();
+        return;
+      }
+
+      if (path.endsWith('/admin') || path.includes('/admin')) {
+        renderAdminPage();
+        return;
+      }
+
+      if (state.loading) {
+        app.className = 'loading';
+        app.innerHTML = '解憂藥局會員資料載入中...';
+        return;
+      }
+
+      if (state.error) {
+        app.className = 'error-page';
+        app.innerHTML = escapeHtml(state.error);
+        return;
+      }
+
+      if (!state.member) {
+        app.className = 'error-page';
+        app.innerHTML = '找不到會員資料';
+        return;
+      }
+
+      const phoneVerified =
+        state.member.phoneVerified === true ||
+        state.member.phoneVerified === 'true';
+
+      if (!phoneVerified) {
+        renderVerifyPhone();
+        return;
+      }
+
+      renderHomePage();
+    }
+
+    function renderVerifyPhone() {
+      app.className = '';
+      app.innerHTML = `
+        <div class="verify-page">
+          <div class="verify-card">
+            <h1>綁定手機號碼</h1>
+            <p>第一次使用解憂藥局會員功能，請先完成手機驗證。</p>
+
+            <input
+              id="phoneInput"
+              placeholder="手機號碼，例如 0912345678"
+              inputmode="tel"
+            />
+
+            <button id="sendOtpBtn">傳送驗證碼</button>
+
+            <div id="otpArea" style="display:none;">
+              <input
+                id="codeInput"
+                placeholder="輸入 6 位數驗證碼"
+                inputmode="numeric"
+              />
+
+              <div id="debugCode" class="debug-code" style="display:none;"></div>
+
+              <button id="verifyOtpBtn">完成驗證</button>
+            </div>
+
+            <div id="verifyMsg" class="message"></div>
+          </div>
+        </div>
+      `;
+
+      let otpId = '';
+
+      document.getElementById('sendOtpBtn').onclick = async () => {
+        const phone = document.getElementById('phoneInput').value.trim();
+        const msg = document.getElementById('verifyMsg');
+        const debugCode = document.getElementById('debugCode');
+
+        msg.textContent = '';
+
+        try {
+          const data = await post('sendOtp', {
+            idToken: state.idToken,
+            phone,
+          });
+
+          otpId = data.otpId;
+
+          document.getElementById('otpArea').style.display = 'block';
+
+          if (data.debugCode) {
+            debugCode.style.display = 'block';
+            debugCode.textContent = '測試驗證碼：' + data.debugCode;
+          }
+
+          msg.textContent = '驗證碼已送出，請輸入 6 位數驗證碼。';
+        } catch (err) {
+          msg.textContent = err.message || String(err);
+        }
+      };
+
+      document.getElementById('verifyOtpBtn').onclick = async () => {
+        const code = document.getElementById('codeInput').value.trim();
+        const msg = document.getElementById('verifyMsg');
+
+        msg.textContent = '';
+
+        try {
+          const data = await post('verifyOtp', {
+            idToken: state.idToken,
+            otpId,
+            code,
+          });
+
+          setState({
+            member: data.member,
+          });
+        } catch (err) {
+          msg.textContent = err.message || String(err);
+        }
+      };
+    }
+
+    function renderHomePage() {
+      const member = state.member;
+      const displayName = escapeHtml(member.displayName || '會員');
+      const level = escapeHtml(member.level || '解憂藥局會員');
+      const pictureUrl = escapeHtml(
+        member.pictureUrl || 'https://placehold.co/160x160?text=會員'
+      );
+      const points = Number(member.points || 0);
+
+      app.className = '';
+      app.innerHTML = `
+        <div class="app-shell">
+          <div class="hero">
+            <div class="topbar">
+              <div class="top-icon">☰</div>
+              <div class="title">${escapeHtml(STORE_NAME)}</div>
+              <div class="top-icon">🔔</div>
+            </div>
+
+            <div class="member-card">
+              <div class="card-left">
+                <div class="logo">解憂藥局</div>
+                <div class="card-name">${displayName}</div>
+                <div class="card-level">${level}</div>
+              </div>
+
+              <img class="avatar" src="${pictureUrl}" alt="會員頭像" />
+
+              <button class="barcode-button" id="openBarcodeBtn">
+                <span>▦</span>
+                <span>條碼</span>
+              </button>
+
+              <div class="points-pill">剩餘點數 ${points}</div>
+            </div>
+
+            <div class="quick-tabs">
+              <button data-tab="activity" class="${state.tab === 'activity' ? 'active' : ''}">
+                <span class="tab-icon">⌂</span>
+                近期活動
+              </button>
+
+              <button data-tab="coupon" class="${state.tab === 'coupon' ? 'active' : ''}">
+                <span class="tab-icon">🎁</span>
+                禮物券
+              </button>
+
+              <button data-tab="news" class="${state.tab === 'news' ? 'active' : ''}">
+                <span class="tab-icon">▣</span>
+                品牌動態
+              </button>
+
+              <button data-tab="order" class="${state.tab === 'order' ? 'active' : ''}">
+                <span class="tab-icon">▤</span>
+                歷史訂單
+              </button>
+            </div>
+          </div>
+
+          <main class="content" id="content"></main>
+        </div>
+      `;
+
+      document.querySelectorAll('[data-tab]').forEach((btn) => {
+        btn.onclick = () => {
+          state.tab = btn.dataset.tab;
+          renderHomePage();
+        };
+      });
+
+      document.getElementById('openBarcodeBtn').onclick = () => {
+        renderBarcodeModal();
+      };
+
+      renderContent();
+    }
+
+    function renderContent() {
+      const content = document.getElementById('content');
+
+      if (state.tab === 'activity') {
+        if (!state.activities.length) {
+          content.innerHTML = `
+            <div class="empty">
+              <h2>近期活動</h2>
+              <p>目前尚無活動。</p>
+            </div>
+          `;
+          return;
+        }
+
+        content.innerHTML = `
+          <div class="list">
+            ${state.activities.map((a) => `
+              <div class="activity-card">
+                ${a.imageUrl ? `<img src="${escapeHtml(a.imageUrl)}" alt="${escapeHtml(a.title)}">` : ''}
+                <h3>${escapeHtml(a.title)}</h3>
+                <p>${escapeHtml(a.content)}</p>
+                <span>到期日：${escapeHtml(a.endAt || '未設定')}</span>
+              </div>
+            `).join('')}
+          </div>
+        `;
+        return;
+      }
+
+      if (state.tab === 'coupon') {
+        if (!state.coupons.length) {
+          content.innerHTML = `
+            <div class="empty">
+              <h2>禮物券</h2>
+              <p>目前沒有可用禮物券。</p>
+            </div>
+          `;
+          return;
+        }
+
+        content.innerHTML = `
+          <div class="list">
+            ${state.coupons.map((c) => `
+              <div class="coupon-card">
+                ${c.imageUrl ? `<img src="${escapeHtml(c.imageUrl)}" alt="${escapeHtml(c.title)}">` : ''}
+                <h3>${escapeHtml(c.title)}</h3>
+                <p>${escapeHtml(c.description)}</p>
+                <span>狀態：${escapeHtml(c.status)}</span>
+              </div>
+            `).join('')}
+          </div>
+        `;
+        return;
+      }
+
+      if (state.tab === 'news') {
+        content.innerHTML = `
+          <div class="empty">
+            <h2>品牌動態</h2>
+            <p>第一版先預留，之後可以放最新公告、門市消息。</p>
+          </div>
+        `;
+        return;
+      }
+
+      if (state.tab === 'order') {
+        content.innerHTML = `
+          <div class="empty">
+            <h2>歷史訂單</h2>
+            <p>第一版先預留，之後可串 POS 或 Google Sheet 訂單資料。</p>
+          </div>
+        `;
+      }
+    }
+
+    function renderBarcodeModal() {
+      const member = state.member;
+      const barcodeValue = String(member.barcodeValue || member.memberId);
+
+      const modal = document.createElement('div');
+      modal.className = 'modal-mask';
+      modal.innerHTML = `
+        <div class="modal-card">
+          <button class="icon-close" id="closeBarcodeBtn">×</button>
+
+          <h2>會員條碼</h2>
+
+          <div class="barcode-box">
+            <svg id="barcodeSvg" class="barcode-svg"></svg>
+          </div>
+
+          <div class="member-code">${escapeHtml(barcodeValue)}</div>
+
+          <div class="qr-wrap">
+            <canvas id="qrCanvas"></canvas>
+          </div>
+
+          <p class="hint">
+            提醒您，以翻拍、截圖方式傳輸至其他設備，可能導致條碼無效。
+          </p>
+        </div>
+      `;
+
+      document.body.appendChild(modal);
+
+      JsBarcode('#barcodeSvg', barcodeValue, {
+        format: 'CODE128',
+        displayValue: false,
+        height: 72,
+        margin: 0,
+        width: 2,
+      });
+
+      QRCode.toCanvas(
+        document.getElementById('qrCanvas'),
+        barcodeValue,
+        {
+          width: 230,
+          margin: 2,
+        },
+        function (error) {
+          if (error) {
+            console.error(error);
+          }
+        }
+      );
+
+      document.getElementById('closeBarcodeBtn').onclick = () => {
+        modal.remove();
+      };
+
+      modal.onclick = (e) => {
+        if (e.target === modal) {
+          modal.remove();
+        }
+      };
+    }
+
+    function renderStaffScanPage() {
+      app.className = '';
+      app.innerHTML = `
+        <div class="staff-page">
+          <div class="staff-card">
+            <h1>解憂藥局｜店家掃碼加點</h1>
+
+            <input id="staffPin" placeholder="店員 PIN" />
+            <input id="barcodeValue" placeholder="掃描或貼上會員條碼" />
+
+            <button id="findMemberBtn">查詢會員</button>
+
+            <div id="memberResult"></div>
+
+            <div id="staffMsg" class="message"></div>
+          </div>
+        </div>
+      `;
+
+      document.getElementById('findMemberBtn').onclick = async () => {
+        const staffPin = document.getElementById('staffPin').value.trim();
+        const barcodeValue = document.getElementById('barcodeValue').value.trim();
+        const msg = document.getElementById('staffMsg');
+        const result = document.getElementById('memberResult');
+
+        msg.textContent = '';
+        result.innerHTML = '';
+
+        try {
+          const data = await post('staffFindMember', {
+            staffPin,
+            barcodeValue,
+          });
+
+          const m = data.member;
+
+          result.innerHTML = `
+            <div class="member-result">
+              <b>${escapeHtml(m.displayName)}</b>
+              <p>會員編號：${escapeHtml(m.memberId)}</p>
+              <p>目前點數：${escapeHtml(m.points)}</p>
+
+              <input id="pointsInput" type="number" value="1" />
+              <input id="noteInput" placeholder="備註，例如消費加點" />
+
+              <button id="addPointsBtn">確認累積點數</button>
+            </div>
+          `;
+
+          document.getElementById('addPointsBtn').onclick = async () => {
+            const points = Number(document.getElementById('pointsInput').value || 0);
+            const note = document.getElementById('noteInput').value.trim();
+
+            msg.textContent = '';
+
+            try {
+              const updated = await post('staffAddPoints', {
+                staffPin,
+                barcodeValue,
+                points,
+                note,
+              });
+
+              msg.textContent =
+                '已完成點數更新\n目前點數：' + updated.member.points;
+            } catch (err) {
+              msg.textContent = err.message || String(err);
+            }
+          };
+        } catch (err) {
+          msg.textContent = err.message || String(err);
+        }
+      };
+    }
+
+    function renderAdminPage() {
+      app.className = '';
+      app.innerHTML = `
+        <div class="staff-page">
+          <div class="staff-card">
+            <h1>解憂藥局｜簡易管理後台</h1>
+
+            <input id="adminPin" placeholder="管理 PIN" />
+            <input id="activityTitle" placeholder="活動標題" />
+            <input id="activityImageUrl" placeholder="活動圖片網址" />
+            <textarea id="activityContent" placeholder="活動內容"></textarea>
+            <input id="activityEndAt" placeholder="到期日，例如 2026/7/31" />
+
+            <button id="createActivityBtn">新增活動</button>
+
+            <div id="adminMsg" class="message"></div>
+          </div>
+        </div>
+      `;
+
+      document.getElementById('createActivityBtn').onclick = async () => {
+        const msg = document.getElementById('adminMsg');
+
+        msg.textContent = '';
+
+        try {
+          await post('adminCreateActivity', {
+            adminPin: document.getElementById('adminPin').value.trim(),
+            title: document.getElementById('activityTitle').value.trim(),
+            imageUrl: document.getElementById('activityImageUrl').value.trim(),
+            content: document.getElementById('activityContent').value.trim(),
+            endAt: document.getElementById('activityEndAt').value.trim(),
+          });
+
+          document.getElementById('activityTitle').value = '';
+          document.getElementById('activityImageUrl').value = '';
+          document.getElementById('activityContent').value = '';
+          document.getElementById('activityEndAt').value = '';
+
+          msg.textContent = '活動已新增';
+        } catch (err) {
+          msg.textContent = err.message || String(err);
+        }
+      };
+    }
+
+    async function boot() {
+      const path = window.location.pathname;
+
+      if (path.endsWith('/pos-scan') || path.includes('/pos-scan')) {
+        renderStaffScanPage();
+        return;
+      }
+
+      if (path.endsWith('/admin') || path.includes('/admin')) {
+        renderAdminPage();
+        return;
+      }
+
+      try {
+        const auth = await initLineLogin();
+
+        if (!auth) {
+          return;
+        }
+
+        const bootData = await post('bootstrapMember', {
+          idToken: auth.idToken,
+          profile: auth.profile,
+        });
+
+        const homeData = await post('getHomeData', {
+          idToken: auth.idToken,
+        });
+
+        setState({
+          loading: false,
+          error: '',
+          idToken: auth.idToken,
+          profile: auth.profile,
+          member: homeData.member || bootData.member,
+          activities: homeData.activities || [],
+          coupons: homeData.coupons || [],
+        });
+      } catch (err) {
+        setState({
+          loading: false,
+          error: err.message || String(err),
+        });
+      }
+    }
+
+    boot();
+  </script>
+</body>
+</html>
