@@ -79,11 +79,50 @@
       letter-spacing: 0.08em;
     }
 
+
     .member-card {
       position: relative;
       min-height: 190px;
       border-radius: 14px;
+      perspective: 1200px;
+      cursor: pointer;
+      background: transparent;
+      overflow: visible;
+      padding: 0;
+      box-shadow: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .member-card-inner {
+      position: relative;
+      width: 100%;
+      height: 190px;
+      min-height: 190px;
+      border-radius: 14px;
+      transform-style: preserve-3d;
+      -webkit-transform-style: preserve-3d;
+      transition: transform 0.55s ease;
+      box-shadow: 0 14px 30px rgba(0, 0, 0, 0.22);
+    }
+
+    .member-card.is-flipped .member-card-inner {
+      transform: rotateY(180deg);
+    }
+
+    .member-card-front,
+    .member-card-back {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 190px;
+      min-height: 190px;
+      border-radius: 14px;
       overflow: hidden;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+    }
+
+    .member-card-front {
       background: radial-gradient(
         circle at 70% 35%,
         #fff7a8 0,
@@ -91,8 +130,21 @@
         #62552e 58%,
         #24211a 100%
       );
-      box-shadow: 0 14px 30px rgba(0, 0, 0, 0.22);
       padding: 18px;
+      transform: rotateY(0deg);
+      z-index: 2;
+    }
+
+    .member-card-back {
+      transform: rotateY(180deg);
+      background: #ffffff;
+      color: #263238;
+      padding: 12px 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
     }
 
     .card-left {
@@ -145,6 +197,7 @@
       left: 52%;
       top: 34px;
       transform: translateX(-50%);
+      z-index: 1;
     }
 
     .points-pill {
@@ -175,77 +228,21 @@
       -webkit-tap-highlight-color: transparent;
     }
 
-
-    .member-card {
-      cursor: pointer;
-      perspective: 1200px;
-      padding: 0;
-      background: transparent;
-      box-shadow: none;
-      overflow: visible;
-    }
-
-    .member-card-inner {
-      position: relative;
-      width: 100%;
-      min-height: 190px;
-      border-radius: 14px;
-      transform-style: preserve-3d;
-      transition: transform 0.55s ease;
-      box-shadow: 0 14px 30px rgba(0, 0, 0, 0.22);
-    }
-
-    .member-card.is-flipped .member-card-inner {
-      transform: rotateY(180deg);
-    }
-
-    .member-card-front,
-
-    .member-card-front {
-      background: radial-gradient(
-        circle at 70% 35%,
-        #fff7a8 0,
-        #c9ad3f 28%,
-        #62552e 58%,
-        #24211a 100%
-      );
-      padding: 18px;
-    }
-
-
-    .member-card-back {
-      transform: rotateY(180deg);
-      background: #ffffff;
-      color: #263238;
-      padding: 14px 16px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-    }
-
-    .card-back-info {
-      display: contents;
-    }
-
     .card-back-title {
       font-size: 22px;
       font-weight: 900;
       line-height: 1.1;
-      margin: 0;
       color: #263238;
-      order: 1;
+      margin: 0;
     }
 
     .card-back-qr {
-      width: 136px;
-      height: 136px;
+      width: 132px;
+      height: 132px;
       border-radius: 12px;
       background: #fff;
       padding: 4px;
       border: 1px solid #e8e8e8;
-      order: 2;
     }
 
     .card-back-qr img {
@@ -255,19 +252,12 @@
     }
 
     .card-back-code {
-      font-size: 17px;
+      font-size: 16px;
       line-height: 1.2;
       letter-spacing: 4px;
       word-break: break-all;
       color: #444;
-      margin: 0;
-      order: 3;
       text-align: center;
-    }
-
-    .card-back-hint,
-    .flip-back-button {
-      display: none !important;
     }
 
     .quick-tabs {
@@ -847,6 +837,10 @@
         member.pictureUrl || 'https://placehold.co/160x160?text=會員'
       );
       const points = Number(member.points || 0);
+      const memberCode = String(member.barcodeValue || member.memberId || '');
+      const qrUrl =
+        'https://api.qrserver.com/v1/create-qr-code/?size=360x360&margin=4&data=' +
+        encodeUrlValue(memberCode);
 
       app.className = '';
       app.innerHTML = `
@@ -858,7 +852,7 @@
               <div class="top-icon">🔔</div>
             </div>
 
-            <div class="member-card" id="memberCard" data-card-flip="1">
+            <div class="member-card" id="memberCard">
               <div class="member-card-inner">
                 <div class="member-card-front">
                   <div class="card-left">
@@ -869,7 +863,7 @@
 
                   <img class="avatar" src="${pictureUrl}" alt="會員頭像" />
 
-                  <button class="barcode-button" id="openBarcodeBtn" type="button" data-card-flip="1">
+                  <button class="barcode-button" id="openBarcodeBtn" type="button">
                     <span>▦</span>
                     <span>條碼</span>
                   </button>
@@ -877,17 +871,14 @@
                   <div class="points-pill">剩餘點數 ${points}</div>
                 </div>
 
-                <div class="member-card-back" data-card-flip="1">
+                <div class="member-card-back">
                   <div class="card-back-title">會員條碼</div>
 
                   <div class="card-back-qr">
-                    <img
-                      alt="會員 QR Code"
-                      src="https://api.qrserver.com/v1/create-qr-code/?size=320x320&margin=4&data=${encodeUrlValue(member.barcodeValue || member.memberId)}"
-                    />
+                    <img alt="會員 QR Code" src="${qrUrl}" />
                   </div>
 
-                  <div class="card-back-code">${escapeHtml(member.barcodeValue || member.memberId)}</div>
+                  <div class="card-back-code">${escapeHtml(memberCode)}</div>
                 </div>
               </div>
             </div>
@@ -926,7 +917,6 @@
         };
       });
 
-
       const memberCard = document.getElementById('memberCard');
       if (memberCard) {
         let lastFlipAt = 0;
@@ -934,7 +924,7 @@
         function flipCard(event) {
           const now = Date.now();
 
-          if (now - lastFlipAt < 500) {
+          if (now - lastFlipAt < 450) {
             return;
           }
 
