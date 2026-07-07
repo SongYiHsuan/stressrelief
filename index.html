@@ -116,17 +116,6 @@
     }
 
     .member-card-front,
-    .member-card-back {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 190px;
-      min-height: 190px;
-      border-radius: 14px;
-      overflow: hidden;
-      backface-visibility: hidden;
-      -webkit-backface-visibility: hidden;
-    }
 
     .member-card-front {
       background: radial-gradient(
@@ -139,18 +128,6 @@
       padding: 18px;
       transform: rotateY(0deg);
       z-index: 2;
-    }
-
-    .member-card-back {
-      transform: rotateY(180deg);
-      background: #ffffff;
-      color: #263238;
-      padding: 12px 16px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 7px;
     }
 
     .card-left {
@@ -234,41 +211,72 @@
       -webkit-tap-highlight-color: transparent;
     }
 
-    .card-back-title {
-      font-size: 22px;
-      font-weight: 900;
-      line-height: 1.1;
-      color: #263238;
-      margin: 0;
-    }
-
-    .card-back-qr {
-      width: 132px;
-      height: 132px;
-      border-radius: 12px;
-      background: #fff;
-      padding: 4px;
-      border: 1px solid #e8e8e8;
-    }
-
-    .card-back-qr img {
-      width: 100%;
-      height: 100%;
-      display: block;
-    }
-
-    .card-back-code {
-      font-size: 16px;
-      line-height: 1.2;
-      letter-spacing: 4px;
-      word-break: break-all;
-      color: #444;
-      text-align: center;
-    }
-
 
     .member-card.is-flipped .barcode-button {
       display: none !important;
+    }
+
+
+    .member-card-back {
+      z-index: 1 !important;
+      transform: rotateY(180deg) !important;
+      -webkit-transform: rotateY(180deg) !important;
+      background: #ffffff !important;
+      color: #263238 !important;
+      padding: 16px 16px 16px 18px !important;
+      display: grid !important;
+      grid-template-columns: 1fr 148px !important;
+      gap: 12px !important;
+      align-items: center !important;
+    }
+
+    .card-back-left {
+      min-width: 0 !important;
+      display: flex !important;
+      flex-direction: column !important;
+      justify-content: center !important;
+      align-items: flex-start !important;
+      gap: 12px !important;
+      height: 100% !important;
+    }
+
+    .card-back-title {
+      font-size: 24px !important;
+      font-weight: 900 !important;
+      line-height: 1.1 !important;
+      color: #263238 !important;
+      margin: 0 !important;
+      text-align: left !important;
+    }
+
+    .card-back-code {
+      font-size: 15px !important;
+      line-height: 1.45 !important;
+      letter-spacing: 2.5px !important;
+      word-break: break-all !important;
+      color: #444 !important;
+      text-align: left !important;
+      max-width: 165px !important;
+      font-weight: 800 !important;
+    }
+
+    .card-back-qr {
+      width: 148px !important;
+      height: 148px !important;
+      min-width: 148px !important;
+      min-height: 148px !important;
+      border-radius: 14px !important;
+      background: #fff !important;
+      padding: 4px !important;
+      border: 1px solid #e8e8e8 !important;
+      justify-self: end !important;
+      align-self: center !important;
+    }
+
+    .card-back-qr img {
+      width: 100% !important;
+      height: 100% !important;
+      display: block !important;
     }
 
     .quick-tabs {
@@ -850,7 +858,7 @@
       const points = Number(member.points || 0);
       const memberCode = String(member.barcodeValue || member.memberId || '');
       const qrUrl =
-        'https://api.qrserver.com/v1/create-qr-code/?size=360x360&margin=4&data=' +
+        'https://api.qrserver.com/v1/create-qr-code/?size=420x420&margin=3&data=' +
         encodeUrlValue(memberCode);
 
       app.className = '';
@@ -877,13 +885,19 @@
                 </div>
 
                 <div class="member-card-back">
-                  <div class="card-back-title">會員條碼</div>
-
-                  <div class="card-back-qr">
-                    <img alt="會員 QR Code" data-qr-src="${qrUrl}" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" loading="lazy" />
+                  <div class="card-back-left">
+                    <div class="card-back-title">會員條碼</div>
+                    <div class="card-back-code">${escapeHtml(memberCode)}</div>
                   </div>
 
-                  <div class="card-back-code">${escapeHtml(memberCode)}</div>
+                  <div class="card-back-qr">
+                    <img
+                      alt="會員 QR Code"
+                      data-qr-src="${qrUrl}"
+                      src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=="
+                      loading="lazy"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
