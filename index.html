@@ -8,8 +8,14 @@
   />
   <title>解憂藥局會員</title>
 
+  <link rel="preconnect" href="https://static.line-scdn.net" crossorigin>
+  <link rel="dns-prefetch" href="https://static.line-scdn.net">
+  <link rel="preconnect" href="https://script.google.com">
+  <link rel="dns-prefetch" href="https://script.google.com">
+  <link rel="preconnect" href="https://api.qrserver.com">
+  <link rel="dns-prefetch" href="https://api.qrserver.com">
+
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
 
   <style>
     * {
@@ -874,7 +880,7 @@
                   <div class="card-back-title">會員條碼</div>
 
                   <div class="card-back-qr">
-                    <img alt="會員 QR Code" src="${qrUrl}" />
+                    <img alt="會員 QR Code" data-qr-src="${qrUrl}" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" loading="lazy" />
                   </div>
 
                   <div class="card-back-code">${escapeHtml(memberCode)}</div>
@@ -931,6 +937,14 @@
           event.stopPropagation();
 
           lastFlipAt = now;
+          if (!memberCard.classList.contains('is-flipped')) {
+            const qrImg = memberCard.querySelector('.card-back-qr img');
+
+            if (qrImg && qrImg.dataset && qrImg.dataset.qrSrc && qrImg.getAttribute('src') !== qrImg.dataset.qrSrc) {
+              qrImg.setAttribute('src', qrImg.dataset.qrSrc);
+            }
+          }
+
           memberCard.classList.toggle('is-flipped');
         }
 
@@ -1166,19 +1180,28 @@
           profile: auth.profile,
         });
 
-        const homeData = await post('getHomeData', {
-          idToken: auth.idToken,
-        });
-
         setState({
           loading: false,
           error: '',
           idToken: auth.idToken,
           profile: auth.profile,
-          member: homeData.member || bootData.member,
-          activities: homeData.activities || [],
-          coupons: homeData.coupons || [],
+          member: bootData.member,
+          activities: [],
+          coupons: [],
         });
+
+        post('getHomeData', {
+          idToken: auth.idToken,
+        })
+          .then(function (homeData) {
+            state.member = homeData.member || bootData.member;
+            state.activities = homeData.activities || [];
+            state.coupons = homeData.coupons || [];
+            render();
+          })
+          .catch(function (err) {
+            console.warn('背景載入活動 / 禮券失敗：', err);
+          });
       } catch (err) {
         setState({
           loading: false,
