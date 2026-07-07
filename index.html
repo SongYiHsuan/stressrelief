@@ -765,11 +765,6 @@
         return;
       }
 
-      if (state.view === 'barcode') {
-        renderBarcodePage();
-        return;
-      }
-
       renderHomePage();
     }
 
@@ -955,23 +950,31 @@
 
       const memberCard = document.getElementById('memberCard');
       if (memberCard) {
-        memberCard.addEventListener('click', function (event) {
-          const target = event.target;
-          if (target && target.closest && target.closest('[data-card-flip="1"]')) {
-            event.preventDefault();
-            event.stopPropagation();
-            memberCard.classList.toggle('is-flipped');
-          }
-        });
+        let lastFlipAt = 0;
 
-        memberCard.addEventListener('touchend', function (event) {
+        function flipCard(event) {
+          const now = Date.now();
+
+          if (now - lastFlipAt < 500) {
+            return;
+          }
+
           const target = event.target;
+
           if (target && target.closest && target.closest('[data-card-flip="1"]')) {
             event.preventDefault();
             event.stopPropagation();
+
+            lastFlipAt = now;
             memberCard.classList.toggle('is-flipped');
           }
-        }, { passive: false });
+        }
+
+        if (window.PointerEvent) {
+          memberCard.addEventListener('pointerup', flipCard);
+        } else {
+          memberCard.addEventListener('click', flipCard);
+        }
       }
 
       renderContent();
