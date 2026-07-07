@@ -200,15 +200,6 @@
     }
 
     .member-card-front,
-    .member-card-back {
-      position: absolute;
-      inset: 0;
-      min-height: 190px;
-      border-radius: 14px;
-      overflow: hidden;
-      backface-visibility: hidden;
-      -webkit-backface-visibility: hidden;
-    }
 
     .member-card-front {
       background: radial-gradient(
@@ -221,48 +212,40 @@
       padding: 18px;
     }
 
+
     .member-card-back {
       transform: rotateY(180deg);
       background: #ffffff;
       color: #263238;
-      padding: 16px 18px;
-      display: grid;
-      grid-template-columns: 1fr 118px;
-      gap: 12px;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
       align-items: center;
+      justify-content: center;
+      gap: 8px;
     }
 
     .card-back-info {
-      min-width: 0;
+      display: contents;
     }
 
     .card-back-title {
-      font-size: 21px;
+      font-size: 22px;
       font-weight: 900;
-      margin-bottom: 8px;
-    }
-
-    .card-back-code {
-      font-size: 13px;
-      letter-spacing: 2px;
-      word-break: break-all;
-      color: #555;
-      margin-bottom: 10px;
-    }
-
-    .card-back-hint {
-      font-size: 12px;
-      line-height: 1.45;
-      color: #888;
+      line-height: 1.1;
+      margin: 0;
+      color: #263238;
+      order: 1;
     }
 
     .card-back-qr {
-      width: 118px;
-      height: 118px;
-      border-radius: 10px;
+      width: 136px;
+      height: 136px;
+      border-radius: 12px;
       background: #fff;
-      padding: 5px;
-      border: 1px solid #eee;
+      padding: 4px;
+      border: 1px solid #e8e8e8;
+      order: 2;
     }
 
     .card-back-qr img {
@@ -271,17 +254,20 @@
       display: block;
     }
 
+    .card-back-code {
+      font-size: 17px;
+      line-height: 1.2;
+      letter-spacing: 4px;
+      word-break: break-all;
+      color: #444;
+      margin: 0;
+      order: 3;
+      text-align: center;
+    }
+
+    .card-back-hint,
     .flip-back-button {
-      margin-top: 10px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 999px;
-      padding: 7px 12px;
-      background: #111;
-      color: #fff;
-      font-size: 13px;
-      font-weight: 800;
+      display: none !important;
     }
 
     .quick-tabs {
@@ -891,24 +877,17 @@
                   <div class="points-pill">剩餘點數 ${points}</div>
                 </div>
 
-                <div class="member-card-back">
-                  <div class="card-back-info">
-                    <div class="card-back-title">會員條碼</div>
-                    <div class="card-back-code">${escapeHtml(member.barcodeValue || member.memberId)}</div>
-                    <div class="card-back-hint">
-                      請出示此 QR Code 給店員掃描累積點數。
-                    </div>
-                    <button class="flip-back-button" type="button" data-card-flip="1">
-                      返回會員卡
-                    </button>
-                  </div>
+                <div class="member-card-back" data-card-flip="1">
+                  <div class="card-back-title">會員條碼</div>
 
                   <div class="card-back-qr">
                     <img
                       alt="會員 QR Code"
-                      src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=8&data=${encodeUrlValue(member.barcodeValue || member.memberId)}"
+                      src="https://api.qrserver.com/v1/create-qr-code/?size=320x320&margin=4&data=${encodeUrlValue(member.barcodeValue || member.memberId)}"
                     />
                   </div>
+
+                  <div class="card-back-code">${escapeHtml(member.barcodeValue || member.memberId)}</div>
                 </div>
               </div>
             </div>
@@ -959,15 +938,11 @@
             return;
           }
 
-          const target = event.target;
+          event.preventDefault();
+          event.stopPropagation();
 
-          if (target && target.closest && target.closest('[data-card-flip="1"]')) {
-            event.preventDefault();
-            event.stopPropagation();
-
-            lastFlipAt = now;
-            memberCard.classList.toggle('is-flipped');
-          }
+          lastFlipAt = now;
+          memberCard.classList.toggle('is-flipped');
         }
 
         if (window.PointerEvent) {
