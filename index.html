@@ -278,12 +278,17 @@
 
     .icon-close {
       position: absolute;
-      top: 22px;
-      right: 22px;
+      top: 14px;
+      right: 14px;
+      width: 52px;
+      height: 52px;
       background: transparent;
       color: #333;
-      font-size: 36px;
+      font-size: 42px;
       line-height: 1;
+      z-index: 9999;
+      display: grid;
+      place-items: center;
     }
 
     .modal-card h2 {
@@ -406,8 +411,12 @@
       }
 
       .modal-mask {
-        align-items: center;
-        justify-content: center;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.62);
+        display: flex;
+        align-items: flex-end;
+        z-index: 9998;
       }
 
       .modal-card {
@@ -792,68 +801,87 @@
     }
 
     function renderBarcodeModal() {
-      const member = state.member;
-      const barcodeValue = String(member.barcodeValue || member.memberId);
+  const member = state.member;
+  const barcodeValue = String(member.barcodeValue || member.memberId);
 
-      const modal = document.createElement('div');
-      modal.className = 'modal-mask';
-      modal.innerHTML = `
-        <div class="modal-card">
-          <button class="icon-close" id="closeBarcodeBtn">×</button>
+  const oldModal = document.getElementById('barcodeModal');
+  if (oldModal) {
+    oldModal.remove();
+  }
 
-          <h2>會員條碼</h2>
+  const modal = document.createElement('div');
+  modal.id = 'barcodeModal';
+  modal.className = 'modal-mask';
 
-          <div class="barcode-box">
-            <svg id="barcodeSvg" class="barcode-svg"></svg>
-          </div>
+  modal.innerHTML = `
+    <div class="modal-card" id="barcodeModalCard">
+      <button type="button" class="icon-close" id="closeBarcodeBtn">×</button>
 
-          <div class="member-code">${escapeHtml(barcodeValue)}</div>
+      <h2>會員條碼</h2>
 
-          <div class="qr-wrap">
-            <canvas id="qrCanvas"></canvas>
-          </div>
+      <div class="barcode-box">
+        <svg id="barcodeSvg" class="barcode-svg"></svg>
+      </div>
 
-          <p class="hint">
-            提醒您，以翻拍、截圖方式傳輸至其他設備，可能導致條碼無效。
-          </p>
-        </div>
-      `;
+      <div class="member-code">${escapeHtml(barcodeValue)}</div>
 
-      document.body.appendChild(modal);
+      <div class="qr-wrap">
+        <canvas id="qrCanvas"></canvas>
+      </div>
 
-      JsBarcode('#barcodeSvg', barcodeValue, {
-        format: 'CODE128',
-        displayValue: false,
-        height: 72,
-        margin: 0,
-        width: 2,
-      });
+      <p class="hint">
+        提醒您，以翻拍、截圖方式傳輸至其他設備，可能導致條碼無效。
+      </p>
+    </div>
+  `;
 
-      QRCode.toCanvas(
-        document.getElementById('qrCanvas'),
-        barcodeValue,
-        {
-          width: 230,
-          margin: 2,
-        },
-        function (error) {
-          if (error) {
-            console.error(error);
-          }
-        }
-      );
+  document.body.appendChild(modal);
 
-      document.getElementById('closeBarcodeBtn').onclick = () => {
-        modal.remove();
-      };
+  JsBarcode('#barcodeSvg', barcodeValue, {
+    format: 'CODE128',
+    displayValue: false,
+    height: 72,
+    margin: 0,
+    width: 2,
+  });
 
-      modal.onclick = (e) => {
-        if (e.target === modal) {
-          modal.remove();
-        }
-      };
+  QRCode.toCanvas(
+    document.getElementById('qrCanvas'),
+    barcodeValue,
+    {
+      width: 230,
+      margin: 2,
+    },
+    function (error) {
+      if (error) {
+        console.error(error);
+      }
     }
+  );
 
+  function closeModal() {
+      const currentModal = document.getElementById('barcodeModal');
+      if (currentModal) {
+        currentModal.remove();
+      }
+    }
+  
+    document.getElementById('closeBarcodeBtn').addEventListener('click', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      closeModal();
+    });
+  
+    modal.addEventListener('click', function (e) {
+      if (e.target === modal) {
+        closeModal();
+      }
+    });
+  
+    document.getElementById('barcodeModalCard').addEventListener('click', function (e) {
+      e.stopPropagation();
+    });
+  }
     function renderStaffScanPage() {
       app.className = '';
       app.innerHTML = `
