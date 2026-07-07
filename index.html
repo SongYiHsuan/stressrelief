@@ -218,14 +218,13 @@
 
 
     .member-card-back {
-      z-index: 1 !important;
       transform: rotateY(180deg) !important;
       -webkit-transform: rotateY(180deg) !important;
       background: #ffffff !important;
       color: #263238 !important;
       padding: 16px 16px 16px 18px !important;
       display: grid !important;
-      grid-template-columns: 1fr 148px !important;
+      grid-template-columns: 1fr 152px !important;
       gap: 12px !important;
       align-items: center !important;
     }
@@ -236,7 +235,7 @@
       flex-direction: column !important;
       justify-content: center !important;
       align-items: flex-start !important;
-      gap: 12px !important;
+      gap: 14px !important;
       height: 100% !important;
     }
 
@@ -261,10 +260,10 @@
     }
 
     .card-back-qr {
-      width: 148px !important;
-      height: 148px !important;
-      min-width: 148px !important;
-      min-height: 148px !important;
+      width: 152px !important;
+      height: 152px !important;
+      min-width: 152px !important;
+      min-height: 152px !important;
       border-radius: 14px !important;
       background: #fff !important;
       padding: 4px !important;
@@ -887,15 +886,13 @@
                 <div class="member-card-back">
                   <div class="card-back-left">
                     <div class="card-back-title">會員條碼</div>
-                    <div class="card-back-code">${escapeHtml(memberCode)}</div>
+                    <div class="card-back-code">${escapeHtml(member.barcodeValue || member.memberId)}</div>
                   </div>
 
                   <div class="card-back-qr">
                     <img
                       alt="會員 QR Code"
-                      data-qr-src="${qrUrl}"
-                      src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=="
-                      loading="lazy"
+                      src="https://api.qrserver.com/v1/create-qr-code/?size=460x460&margin=3&data=${encodeUrlValue(member.barcodeValue || member.memberId)}"
                     />
                   </div>
                 </div>
