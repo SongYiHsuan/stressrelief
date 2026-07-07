@@ -295,17 +295,19 @@
 
     .icon-close {
       position: absolute;
-      top: 14px;
-      right: 14px;
-      width: 52px;
-      height: 52px;
-      background: transparent;
+      top: 10px;
+      right: 10px;
+      width: 58px;
+      height: 58px;
+      background: rgba(255, 255, 255, 0.95);
       color: #333;
-      font-size: 42px;
+      font-size: 46px;
       line-height: 1;
-      z-index: 9999;
+      z-index: 10001;
       display: grid;
       place-items: center;
+      border-radius: 999px;
+      touch-action: manipulation;
     }
 
     .modal-card h2 {
@@ -433,7 +435,21 @@
         background: rgba(0, 0, 0, 0.62);
         display: flex;
         align-items: flex-end;
-        z-index: 9998;
+        z-index: 10000;
+      }
+      .modal-open {
+        overflow: hidden;
+      }
+      
+      .modal-close-bottom {
+        width: 100%;
+        margin-top: 24px;
+        border-radius: 14px;
+        padding: 14px;
+        background: #111;
+        color: #fff;
+        font-weight: 900;
+        font-size: 18px;
       }
 
       .modal-card {
@@ -817,64 +833,104 @@
       }
     }
 
-    function renderBarcodeModal() {
-  const member = state.member;
-  const barcodeValue = String(member.barcodeValue || member.memberId);
 
-  const oldModal = document.getElementById('barcodeModal');
-  if (oldModal) {
-    oldModal.remove();
+    function closeBarcodeModal(event) {
+  if (event) {
+    event.preventDefault();
+    event.stopPropagation();
   }
 
-  const modal = document.createElement('div');
-  modal.id = 'barcodeModal';
-  modal.className = 'modal-mask';
+  const modal = document.getElementById('barcodeModal');
+  if (modal) {
+    modal.remove();
+  }
 
-  modal.innerHTML = `
-    <div class="modal-card" id="barcodeModalCard">
-      <button type="button" class="icon-close" id="closeBarcodeBtn">×</button>
+  document.body.classList.remove('modal-open');
+}
 
-      <h2>會員條碼</h2>
-
-      <div class="barcode-box">
-        <svg id="barcodeSvg" class="barcode-svg"></svg>
+function renderBarcodeModal() {
+    const member = state.member;
+    const barcodeValue = String(member.barcodeValue || member.memberId);
+  
+    closeBarcodeModal();
+  
+    const modal = document.createElement('div');
+    modal.id = 'barcodeModal';
+    modal.className = 'modal-mask';
+  
+    modal.innerHTML = `
+      <div class="modal-card" id="barcodeModalCard">
+        <button
+          type="button"
+          class="icon-close"
+          onclick="closeBarcodeModal(event)"
+          aria-label="關閉"
+        >
+          ×
+        </button>
+  
+        <h2>會員條碼</h2>
+  
+        <div class="barcode-box">
+          <svg id="barcodeSvg" class="barcode-svg"></svg>
+        </div>
+  
+        <div class="member-code">${escapeHtml(barcodeValue)}</div>
+  
+        <div class="qr-wrap">
+          <canvas id="qrCanvas"></canvas>
+        </div>
+  
+        <p class="hint">
+          提醒您，以翻拍、截圖方式傳輸至其他設備，可能導致條碼無效。
+        </p>
+  
+        <button
+          type="button"
+          class="modal-close-bottom"
+          onclick="closeBarcodeModal(event)"
+        >
+          關閉
+        </button>
       </div>
-
-      <div class="member-code">${escapeHtml(barcodeValue)}</div>
-
-      <div class="qr-wrap">
-        <canvas id="qrCanvas"></canvas>
-      </div>
-
-      <p class="hint">
-        提醒您，以翻拍、截圖方式傳輸至其他設備，可能導致條碼無效。
-      </p>
-    </div>
-  `;
-
-  document.body.appendChild(modal);
-
-  JsBarcode('#barcodeSvg', barcodeValue, {
-    format: 'CODE128',
-    displayValue: false,
-    height: 72,
-    margin: 0,
-    width: 2,
-  });
-
-  QRCode.toCanvas(
-    document.getElementById('qrCanvas'),
-    barcodeValue,
-    {
-      width: 230,
-      margin: 2,
-    },
-    function (error) {
-      if (error) {
-        console.error(error);
+    `;
+  
+    document.body.appendChild(modal);
+    document.body.classList.add('modal-open');
+  
+    JsBarcode('#barcodeSvg', barcodeValue, {
+      format: 'CODE128',
+      displayValue: false,
+      height: 72,
+      margin: 0,
+      width: 2,
+    });
+  
+    QRCode.toCanvas(
+      document.getElementById('qrCanvas'),
+      barcodeValue,
+      {
+        width: 230,
+        margin: 2,
+      },
+      function (error) {
+        if (error) {
+          console.error(error);
+        }
       }
-    }
-  );
+    );
+  
+    modal.onclick = function (event) {
+      if (event.target === modal) {
+        closeBarcodeModal(event);
+      }
+    };
+  
+    const card = document.getElementById('barcodeModalCard');
+    card.onclick = function (event) {
+      event.stopPropagation();
+    };
+  }
 
   function closeModal() {
       const currentModal = document.getElementById('barcodeModal');
