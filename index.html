@@ -638,7 +638,7 @@
 </head>
 
 <body>
-  <div id="app" class="loading">解憂藥局會員資料載入中...</div>
+  <div id="app" class="loading">載入中...</div>
 
   <script>
     const LIFF_ID = '2010622307-PCCxkTmN';
@@ -646,6 +646,46 @@
     const STORE_NAME = '解憂藥局';
 
     const app = document.getElementById('app');
+
+    const CACHE_KEY = 'stressrelief_member_cache_v1';
+
+    function saveMemberCache() {
+      try {
+        localStorage.setItem(
+          CACHE_KEY,
+          JSON.stringify({
+            member: state.member,
+            activities: state.activities || [],
+            coupons: state.coupons || [],
+            savedAt: Date.now(),
+          })
+        );
+      } catch (err) {
+        console.warn('save cache failed', err);
+      }
+    }
+
+    function readMemberCache() {
+      try {
+        const raw = localStorage.getItem(CACHE_KEY);
+        if (!raw) return null;
+
+        const data = JSON.parse(raw);
+
+        if (!data || !data.member) return null;
+
+        // 快取最多保留 12 小時
+        if (Date.now() - Number(data.savedAt || 0) > 12 * 60 * 60 * 1000) {
+          return null;
+        }
+
+        return data;
+      } catch (err) {
+        console.warn('read cache failed', err);
+        return null;
+      }
+    }
+
 
     const state = {
       loading: true,
@@ -747,7 +787,7 @@
 
       if (state.loading) {
         app.className = 'loading';
-        app.innerHTML = '解憂藥局會員資料載入中...';
+        app.innerHTML = '載入中...';
         return;
       }
 
@@ -892,7 +932,7 @@
                     <div class="card-level">${level}</div>
                   </div>
 
-                  <img class="avatar" src="${pictureUrl}" alt="會員頭像" />
+                  <img class="avatar" src="${pictureUrl}" alt="會員頭像" loading="lazy" decoding="async" />
 
                   <div class="points-pill">剩餘點數 ${points}</div>
                 </div>
@@ -904,7 +944,7 @@
                   </div>
 
                   <div class="card-back-qr">
-                    <img alt="會員 QR Code" src="${qrUrl}" />
+                    <img alt="會員 QR Code" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" data-qr-src="${qrUrl}" loading="lazy" />
                   </div>
                 </div>
               </div>
@@ -960,6 +1000,20 @@
           event.stopPropagation();
 
           lastFlipAt = now;
+
+          if (!memberCard.classList.contains('is-flipped')) {
+            const qrImg = memberCard.querySelector('.card-back-qr img');
+
+            if (
+              qrImg &&
+              qrImg.dataset &&
+              qrImg.dataset.qrSrc &&
+              qrImg.getAttribute('src') !== qrImg.dataset.qrSrc
+            ) {
+              qrImg.setAttribute('src', qrImg.dataset.qrSrc);
+            }
+          }
+
           memberCard.classList.toggle('is-flipped');
         }
 
@@ -991,7 +1045,7 @@
           <div class="list">
             ${state.activities.map((a) => `
               <div class="activity-card">
-                ${a.imageUrl ? `<img src="${escapeHtml(a.imageUrl)}" alt="${escapeHtml(a.title)}">` : ''}
+                ${a.imageUrl ? `<img src="${escapeHtml(a.imageUrl)}" alt="${escapeHtml(a.title)}" loading="lazy" decoding="async">` : ''}
                 <h3>${escapeHtml(a.title)}</h3>
                 <p>${escapeHtml(a.content)}</p>
                 <span>到期日：${escapeHtml(a.endAt || '未設定')}</span>
@@ -1017,7 +1071,7 @@
           <div class="list">
             ${state.coupons.map((c) => `
               <div class="coupon-card">
-                ${c.imageUrl ? `<img src="${escapeHtml(c.imageUrl)}" alt="${escapeHtml(c.title)}">` : ''}
+                ${c.imageUrl ? `<img src="${escapeHtml(c.imageUrl)}" alt="${escapeHtml(c.title)}" loading="lazy" decoding="async">` : ''}
                 <h3>${escapeHtml(c.title)}</h3>
                 <p>${escapeHtml(c.description)}</p>
                 <span>狀態：${escapeHtml(c.status)}</span>
@@ -1183,6 +1237,17 @@
         return;
       }
 
+      const cached = readMemberCache();
+
+      if (cached && cached.member) {
+        state.loading = false;
+        state.error = '';
+        state.member = cached.member;
+        state.activities = cached.activities || [];
+        state.coupons = cached.coupons || [];
+        render();
+      }
+
       try {
         const auth = await initLineLogin();
 
@@ -1195,15 +1260,16 @@
           profile: auth.profile,
         });
 
-        setState({
-          loading: false,
-          error: '',
-          idToken: auth.idToken,
-          profile: auth.profile,
-          member: bootData.member,
-          activities: [],
-          coupons: [],
-        });
+        state.loading = false;
+        state.error = '';
+        state.idToken = auth.idToken;
+        state.profile = auth.profile;
+        state.member = bootData.member;
+        state.activities = state.activities || [];
+        state.coupons = state.coupons || [];
+
+        render();
+        saveMemberCache();
 
         post('getHomeData', {
           idToken: auth.idToken,
@@ -1212,12 +1278,18 @@
             state.member = homeData.member || bootData.member;
             state.activities = homeData.activities || [];
             state.coupons = homeData.coupons || [];
+            saveMemberCache();
             render();
           })
           .catch(function (err) {
             console.warn('背景載入活動 / 禮券失敗：', err);
           });
       } catch (err) {
+        if (cached && cached.member) {
+          console.warn('背景更新會員資料失敗，但已使用快取：', err);
+          return;
+        }
+
         setState({
           loading: false,
           error: err.message || String(err),
