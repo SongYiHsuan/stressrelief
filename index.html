@@ -318,6 +318,7 @@
       place-items: center;
       border-radius: 999px;
       touch-action: manipulation;
+      pointer-events: auto;
     }
 
     .modal-card h2 {
@@ -366,6 +367,7 @@
       font-weight: 900;
       font-size: 18px;
       touch-action: manipulation;
+      pointer-events: auto;
     }
 
     .verify-page,
@@ -473,6 +475,51 @@
     const STORE_NAME = '解憂藥局';
 
     const app = document.getElementById('app');
+
+    function forceCloseBarcodeModal(event) {
+      if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        if (event.stopImmediatePropagation) {
+          event.stopImmediatePropagation();
+        }
+      }
+
+      document.querySelectorAll('#barcodeModal').forEach(function (modal) {
+        modal.remove();
+      });
+
+      document.body.classList.remove('modal-open');
+      document.documentElement.classList.remove('modal-open');
+    }
+
+    ['click', 'touchstart', 'touchend', 'pointerdown', 'pointerup'].forEach(function (eventName) {
+      document.addEventListener(
+        eventName,
+        function (event) {
+          const target = event.target;
+
+          if (!target) return;
+
+          const closeTarget = target.closest
+            ? target.closest('[data-close-barcode="1"]')
+            : null;
+
+          if (closeTarget) {
+            forceCloseBarcodeModal(event);
+            return;
+          }
+
+          const modal = document.getElementById('barcodeModal');
+
+          if (modal && event.target === modal) {
+            forceCloseBarcodeModal(event);
+          }
+        },
+        true
+      );
+    });
+
 
     const state = {
       loading: true,
@@ -836,31 +883,21 @@
       }
     }
 
+
     function closeBarcodeModal(event) {
-      if (event) {
-        event.preventDefault();
-        event.stopPropagation();
-      }
-
-      const modal = document.getElementById('barcodeModal');
-
-      if (modal) {
-        modal.remove();
-      }
-
-      document.body.classList.remove('modal-open');
-      document.documentElement.classList.remove('modal-open');
+      forceCloseBarcodeModal(event);
     }
 
     function renderBarcodeModal() {
       const member = state.member;
       const barcodeValue = String(member.barcodeValue || member.memberId);
 
-      closeBarcodeModal();
+      forceCloseBarcodeModal();
 
       const modal = document.createElement('div');
       modal.id = 'barcodeModal';
       modal.className = 'modal-mask';
+      modal.setAttribute('data-close-barcode', '1');
 
       modal.innerHTML = `
         <div class="modal-card" id="barcodeModalCard">
@@ -868,6 +905,7 @@
             type="button"
             class="icon-close"
             id="closeBarcodeBtn"
+            data-close-barcode="1"
             aria-label="關閉"
           >
             ×
@@ -893,6 +931,7 @@
             type="button"
             class="modal-close-bottom"
             id="closeBarcodeBottomBtn"
+            data-close-barcode="1"
           >
             關閉
           </button>
@@ -902,6 +941,26 @@
       document.body.appendChild(modal);
       document.body.classList.add('modal-open');
       document.documentElement.classList.add('modal-open');
+
+      const card = document.getElementById('barcodeModalCard');
+
+      ['click', 'touchstart', 'touchend', 'pointerdown', 'pointerup'].forEach(function (eventName) {
+        card.addEventListener(
+          eventName,
+          function (event) {
+            const closeTarget = event.target.closest
+              ? event.target.closest('[data-close-barcode="1"]')
+              : null;
+
+            if (closeTarget) {
+              return;
+            }
+
+            event.stopPropagation();
+          },
+          true
+        );
+      });
 
       JsBarcode('#barcodeSvg', barcodeValue, {
         format: 'CODE128',
@@ -924,36 +983,6 @@
           }
         }
       );
-
-      const closeBtn = document.getElementById('closeBarcodeBtn');
-      const bottomBtn = document.getElementById('closeBarcodeBottomBtn');
-      const card = document.getElementById('barcodeModalCard');
-
-      closeBtn.addEventListener('click', closeBarcodeModal, { passive: false });
-      closeBtn.addEventListener('touchend', closeBarcodeModal, { passive: false });
-
-      bottomBtn.addEventListener('click', closeBarcodeModal, { passive: false });
-      bottomBtn.addEventListener('touchend', closeBarcodeModal, { passive: false });
-
-      modal.addEventListener('click', function (event) {
-        if (event.target === modal) {
-          closeBarcodeModal(event);
-        }
-      });
-
-      modal.addEventListener('touchend', function (event) {
-        if (event.target === modal) {
-          closeBarcodeModal(event);
-        }
-      }, { passive: false });
-
-      card.addEventListener('click', function (event) {
-        event.stopPropagation();
-      });
-
-      card.addEventListener('touchend', function (event) {
-        event.stopPropagation();
-      });
     }
 
     function renderStaffScanPage() {
