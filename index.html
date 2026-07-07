@@ -86,147 +86,156 @@
     }
 
 
+
     .member-card {
-      position: relative;
-      min-height: 190px;
-      border-radius: 14px;
-      perspective: 1200px;
-      cursor: pointer;
-      background: transparent;
-      overflow: visible;
-      padding: 0;
-      box-shadow: none;
+      position: relative !important;
+      display: block !important;
+      width: 100% !important;
+      height: 190px !important;
+      min-height: 190px !important;
+      max-height: 190px !important;
+      border-radius: 14px !important;
+      perspective: 1200px !important;
+      -webkit-perspective: 1200px !important;
+      background: transparent !important;
+      box-shadow: none !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      overflow: visible !important;
+      cursor: pointer !important;
       -webkit-tap-highlight-color: transparent;
     }
 
     .member-card-inner {
-      position: relative;
-      width: 100%;
-      height: 190px;
-      min-height: 190px;
-      border-radius: 14px;
-      transform-style: preserve-3d;
-      -webkit-transform-style: preserve-3d;
-      transition: transform 0.55s ease;
-      box-shadow: 0 14px 30px rgba(0, 0, 0, 0.22);
+      position: relative !important;
+      display: block !important;
+      width: 100% !important;
+      height: 190px !important;
+      min-height: 190px !important;
+      max-height: 190px !important;
+      border-radius: 14px !important;
+      transform-style: preserve-3d !important;
+      -webkit-transform-style: preserve-3d !important;
+      transition: transform 0.55s ease !important;
+      box-shadow: 0 14px 30px rgba(0, 0, 0, 0.22) !important;
     }
 
     .member-card.is-flipped .member-card-inner {
-      transform: rotateY(180deg);
+      transform: rotateY(180deg) !important;
+      -webkit-transform: rotateY(180deg) !important;
     }
 
     .member-card-front,
+    .member-card-back {
+      position: absolute !important;
+      inset: 0 !important;
+      width: 100% !important;
+      height: 190px !important;
+      min-height: 190px !important;
+      max-height: 190px !important;
+      border-radius: 14px !important;
+      overflow: hidden !important;
+      backface-visibility: hidden !important;
+      -webkit-backface-visibility: hidden !important;
+      transform-style: preserve-3d !important;
+      -webkit-transform-style: preserve-3d !important;
+    }
 
     .member-card-front {
+      z-index: 2 !important;
+      transform: rotateY(0deg) translateZ(1px) !important;
+      -webkit-transform: rotateY(0deg) translateZ(1px) !important;
       background: radial-gradient(
         circle at 70% 35%,
         #fff7a8 0,
         #c9ad3f 28%,
         #62552e 58%,
         #24211a 100%
-      );
-      padding: 18px;
-      transform: rotateY(0deg);
-      z-index: 2;
+      ) !important;
+      padding: 18px !important;
+    }
+
+    .member-card-back {
+      z-index: 1 !important;
+      transform: rotateY(180deg) translateZ(1px) !important;
+      -webkit-transform: rotateY(180deg) translateZ(1px) !important;
+      background: #ffffff !important;
+      color: #263238 !important;
+      padding: 16px 14px 16px 18px !important;
+      display: grid !important;
+      grid-template-columns: minmax(0, 1fr) 154px !important;
+      gap: 10px !important;
+      align-items: center !important;
     }
 
     .card-left {
-      position: relative;
-      z-index: 2;
-      width: 150px;
+      position: relative !important;
+      z-index: 2 !important;
+      width: 150px !important;
     }
 
     .logo {
-      width: 82px;
-      height: 30px;
-      background: rgba(255, 255, 255, 0.86);
-      color: #111;
-      display: grid;
-      place-items: center;
-      font-weight: 900;
-      font-size: 12px;
-      margin-bottom: 64px;
+      width: 82px !important;
+      height: 30px !important;
+      background: rgba(255, 255, 255, 0.86) !important;
+      color: #111 !important;
+      display: grid !important;
+      place-items: center !important;
+      font-weight: 900 !important;
+      font-size: 12px !important;
+      margin-bottom: 64px !important;
     }
 
     .card-name {
-      max-width: 145px;
-      font-size: 19px;
-      line-height: 1.2;
-      font-weight: 900;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      text-shadow: 0 1px 1px rgba(255, 255, 255, 0.35);
+      max-width: 145px !important;
+      font-size: 19px !important;
+      line-height: 1.2 !important;
+      font-weight: 900 !important;
+      white-space: nowrap !important;
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
+      text-shadow: 0 1px 1px rgba(255, 255, 255, 0.35) !important;
     }
 
     .card-level {
-      max-width: 145px;
-      margin-top: 6px;
-      font-size: 13px;
-      line-height: 1.2;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      max-width: 145px !important;
+      margin-top: 6px !important;
+      font-size: 13px !important;
+      line-height: 1.2 !important;
+      white-space: nowrap !important;
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
     }
 
     .avatar {
-      position: absolute;
-      width: 116px;
-      height: 116px;
-      border-radius: 999px;
-      object-fit: cover;
-      background: #eee;
-      border: 5px solid rgba(255, 255, 255, 0.9);
-      left: 52%;
-      top: 34px;
-      transform: translateX(-50%);
-      z-index: 1;
+      position: absolute !important;
+      width: 116px !important;
+      height: 116px !important;
+      border-radius: 999px !important;
+      object-fit: cover !important;
+      background: #eee !important;
+      border: 5px solid rgba(255, 255, 255, 0.9) !important;
+      left: 52% !important;
+      top: 34px !important;
+      transform: translateX(-50%) !important;
+      -webkit-transform: translateX(-50%) !important;
+      z-index: 1 !important;
     }
 
     .points-pill {
-      position: absolute;
-      top: 12px;
-      right: 12px;
-      background: rgba(0, 0, 0, 0.5);
-      color: #ffe84d;
-      padding: 8px 12px;
-      border-radius: 999px;
-      font-weight: 800;
-      z-index: 3;
+      position: absolute !important;
+      top: 12px !important;
+      right: 12px !important;
+      background: rgba(0, 0, 0, 0.5) !important;
+      color: #ffe84d !important;
+      padding: 8px 12px !important;
+      border-radius: 999px !important;
+      font-weight: 800 !important;
+      z-index: 3 !important;
     }
 
     .barcode-button {
-      position: absolute;
-      right: 14px;
-      bottom: 14px;
-      background: rgba(0, 0, 0, 0.42);
-      color: white;
-      border-radius: 12px;
-      padding: 8px 10px;
-      display: flex;
-      gap: 5px;
-      align-items: center;
-      z-index: 3;
-      text-decoration: none;
-      -webkit-tap-highlight-color: transparent;
-    }
-
-
-    .member-card.is-flipped .barcode-button {
       display: none !important;
-    }
-
-
-    .member-card-back {
-      transform: rotateY(180deg) !important;
-      -webkit-transform: rotateY(180deg) !important;
-      background: #ffffff !important;
-      color: #263238 !important;
-      padding: 16px 16px 16px 18px !important;
-      display: grid !important;
-      grid-template-columns: 1fr 152px !important;
-      gap: 12px !important;
-      align-items: center !important;
     }
 
     .card-back-left {
@@ -235,8 +244,9 @@
       flex-direction: column !important;
       justify-content: center !important;
       align-items: flex-start !important;
-      gap: 14px !important;
+      gap: 16px !important;
       height: 100% !important;
+      overflow: hidden !important;
     }
 
     .card-back-title {
@@ -246,24 +256,27 @@
       color: #263238 !important;
       margin: 0 !important;
       text-align: left !important;
+      white-space: nowrap !important;
     }
 
     .card-back-code {
-      font-size: 15px !important;
-      line-height: 1.45 !important;
-      letter-spacing: 2.5px !important;
-      word-break: break-all !important;
+      font-size: 14px !important;
+      line-height: 1.2 !important;
+      letter-spacing: 1px !important;
       color: #444 !important;
       text-align: left !important;
-      max-width: 165px !important;
-      font-weight: 800 !important;
+      font-weight: 900 !important;
+      white-space: nowrap !important;
+      word-break: normal !important;
+      overflow-wrap: normal !important;
+      max-width: 100% !important;
     }
 
     .card-back-qr {
-      width: 152px !important;
-      height: 152px !important;
-      min-width: 152px !important;
-      min-height: 152px !important;
+      width: 154px !important;
+      height: 154px !important;
+      min-width: 154px !important;
+      min-height: 154px !important;
       border-radius: 14px !important;
       background: #fff !important;
       padding: 4px !important;
@@ -857,7 +870,7 @@
       const points = Number(member.points || 0);
       const memberCode = String(member.barcodeValue || member.memberId || '');
       const qrUrl =
-        'https://api.qrserver.com/v1/create-qr-code/?size=420x420&margin=3&data=' +
+        'https://api.qrserver.com/v1/create-qr-code/?size=520x520&margin=2&data=' +
         encodeUrlValue(memberCode);
 
       app.className = '';
@@ -880,20 +893,18 @@
                   </div>
 
                   <img class="avatar" src="${pictureUrl}" alt="會員頭像" />
+
                   <div class="points-pill">剩餘點數 ${points}</div>
                 </div>
 
                 <div class="member-card-back">
                   <div class="card-back-left">
                     <div class="card-back-title">會員條碼</div>
-                    <div class="card-back-code">${escapeHtml(member.barcodeValue || member.memberId)}</div>
+                    <div class="card-back-code">${escapeHtml(memberCode)}</div>
                   </div>
 
                   <div class="card-back-qr">
-                    <img
-                      alt="會員 QR Code"
-                      src="https://api.qrserver.com/v1/create-qr-code/?size=460x460&margin=3&data=${encodeUrlValue(member.barcodeValue || member.memberId)}"
-                    />
+                    <img alt="會員 QR Code" src="${qrUrl}" />
                   </div>
                 </div>
               </div>
@@ -934,6 +945,7 @@
       });
 
       const memberCard = document.getElementById('memberCard');
+
       if (memberCard) {
         let lastFlipAt = 0;
 
@@ -948,14 +960,6 @@
           event.stopPropagation();
 
           lastFlipAt = now;
-          if (!memberCard.classList.contains('is-flipped')) {
-            const qrImg = memberCard.querySelector('.card-back-qr img');
-
-            if (qrImg && qrImg.dataset && qrImg.dataset.qrSrc && qrImg.getAttribute('src') !== qrImg.dataset.qrSrc) {
-              qrImg.setAttribute('src', qrImg.dataset.qrSrc);
-            }
-          }
-
           memberCard.classList.toggle('is-flipped');
         }
 
