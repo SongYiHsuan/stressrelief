@@ -260,6 +260,11 @@
       text-align: center;
     }
 
+
+    .member-card.is-flipped .barcode-button {
+      display: none !important;
+    }
+
     .quick-tabs {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
@@ -862,12 +867,6 @@
                   </div>
 
                   <img class="avatar" src="${pictureUrl}" alt="會員頭像" />
-
-                  <button class="barcode-button" id="openBarcodeBtn" type="button">
-                    <span>▦</span>
-                    <span>條碼</span>
-                  </button>
-
                   <div class="points-pill">剩餘點數 ${points}</div>
                 </div>
 
