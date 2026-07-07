@@ -172,6 +172,8 @@
       gap: 5px;
       align-items: center;
       z-index: 3;
+      text-decoration: none;
+      -webkit-tap-highlight-color: transparent;
     }
 
     .quick-tabs {
@@ -530,51 +532,6 @@
 
     const app = document.getElementById('app');
 
-    function forceCloseBarcodeModal(event) {
-      if (event) {
-        event.preventDefault();
-        event.stopPropagation();
-        if (event.stopImmediatePropagation) {
-          event.stopImmediatePropagation();
-        }
-      }
-
-      document.querySelectorAll('#barcodeModal').forEach(function (modal) {
-        modal.remove();
-      });
-
-      document.body.classList.remove('modal-open');
-      document.documentElement.classList.remove('modal-open');
-    }
-
-    ['click', 'touchstart', 'touchend', 'pointerdown', 'pointerup'].forEach(function (eventName) {
-      document.addEventListener(
-        eventName,
-        function (event) {
-          const target = event.target;
-
-          if (!target) return;
-
-          const closeTarget = target.closest
-            ? target.closest('[data-close-barcode="1"]')
-            : null;
-
-          if (closeTarget) {
-            forceCloseBarcodeModal(event);
-            return;
-          }
-
-          const modal = document.getElementById('barcodeModal');
-
-          if (modal && event.target === modal) {
-            forceCloseBarcodeModal(event);
-          }
-        },
-        true
-      );
-    });
-
-
     const state = {
       loading: true,
       error: '',
@@ -594,6 +551,20 @@
         .replaceAll('>', '&gt;')
         .replaceAll('"', '&quot;')
         .replaceAll("'", '&#039;');
+    }
+
+
+    function getHomeUrl() {
+      return window.location.pathname;
+    }
+
+    function getBarcodeUrl() {
+      return window.location.pathname + '?view=barcode';
+    }
+
+    function isBarcodeView() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('view') === 'barcode';
     }
 
     async function post(action, payload = {}) {
@@ -697,6 +668,11 @@
 
       if (state.view === 'barcode') {
         renderBarcodePage();
+        return;
+      }
+
+      if (isBarcodeView()) {
+        renderBarcodeStaticPage();
         return;
       }
 
@@ -816,10 +792,10 @@
 
               <img class="avatar" src="${pictureUrl}" alt="會員頭像" />
 
-              <button class="barcode-button" id="openBarcodeBtn" type="button">
+              <a class="barcode-button" id="openBarcodeBtn" href="${getBarcodeUrl()}">
                 <span>▦</span>
                 <span>條碼</span>
-              </button>
+              </a>
 
               <div class="points-pill">剩餘點數 ${points}</div>
             </div>
@@ -857,14 +833,6 @@
           renderHomePage();
         };
       });
-
-      const openBtn = document.getElementById('openBarcodeBtn');
-      openBtn.onclick = function (event) {
-        event.preventDefault();
-        event.stopPropagation();
-        state.view = 'barcode';
-        renderBarcodePage();
-      };
 
       renderContent();
     }
@@ -946,7 +914,8 @@
 
 
 
-    function renderBarcodePage() {
+
+    function renderBarcodeStaticPage() {
       const member = state.member;
       const barcodeValue = String(member.barcodeValue || member.memberId);
 
@@ -954,13 +923,13 @@
       app.innerHTML = `
         <div class="barcode-page">
           <div class="barcode-page-card">
-            <button
-              type="button"
+            <a
               class="barcode-page-close"
-              id="barcodePageCloseBtn"
+              href="${getHomeUrl()}"
+              aria-label="關閉"
             >
               ×
-            </button>
+            </a>
 
             <h2>會員條碼</h2>
 
@@ -978,13 +947,12 @@
               提醒您，以翻拍、截圖方式傳輸至其他設備，可能導致條碼無效。
             </p>
 
-            <button
-              type="button"
+            <a
               class="barcode-page-bottom-close"
-              id="barcodePageBottomCloseBtn"
+              href="${getHomeUrl()}"
             >
               關閉
-            </button>
+            </a>
           </div>
         </div>
       `;
@@ -1010,22 +978,6 @@
           }
         }
       );
-
-      function goBackHome(event) {
-        if (event) {
-          event.preventDefault();
-          event.stopPropagation();
-        }
-
-        state.view = 'home';
-        renderHomePage();
-      }
-
-      document.getElementById('barcodePageCloseBtn').onclick = goBackHome;
-      document.getElementById('barcodePageBottomCloseBtn').onclick = goBackHome;
-
-      document.getElementById('barcodePageCloseBtn').ontouchend = goBackHome;
-      document.getElementById('barcodePageBottomCloseBtn').ontouchend = goBackHome;
     }
 
     function renderStaffScanPage() {
