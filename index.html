@@ -10,7 +10,6 @@
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
 
   <style>
     * {
@@ -174,6 +173,115 @@
       z-index: 3;
       text-decoration: none;
       -webkit-tap-highlight-color: transparent;
+    }
+
+
+    .member-card {
+      cursor: pointer;
+      perspective: 1200px;
+      padding: 0;
+      background: transparent;
+      box-shadow: none;
+      overflow: visible;
+    }
+
+    .member-card-inner {
+      position: relative;
+      width: 100%;
+      min-height: 190px;
+      border-radius: 14px;
+      transform-style: preserve-3d;
+      transition: transform 0.55s ease;
+      box-shadow: 0 14px 30px rgba(0, 0, 0, 0.22);
+    }
+
+    .member-card.is-flipped .member-card-inner {
+      transform: rotateY(180deg);
+    }
+
+    .member-card-front,
+    .member-card-back {
+      position: absolute;
+      inset: 0;
+      min-height: 190px;
+      border-radius: 14px;
+      overflow: hidden;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+    }
+
+    .member-card-front {
+      background: radial-gradient(
+        circle at 70% 35%,
+        #fff7a8 0,
+        #c9ad3f 28%,
+        #62552e 58%,
+        #24211a 100%
+      );
+      padding: 18px;
+    }
+
+    .member-card-back {
+      transform: rotateY(180deg);
+      background: #ffffff;
+      color: #263238;
+      padding: 16px 18px;
+      display: grid;
+      grid-template-columns: 1fr 118px;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .card-back-info {
+      min-width: 0;
+    }
+
+    .card-back-title {
+      font-size: 21px;
+      font-weight: 900;
+      margin-bottom: 8px;
+    }
+
+    .card-back-code {
+      font-size: 13px;
+      letter-spacing: 2px;
+      word-break: break-all;
+      color: #555;
+      margin-bottom: 10px;
+    }
+
+    .card-back-hint {
+      font-size: 12px;
+      line-height: 1.45;
+      color: #888;
+    }
+
+    .card-back-qr {
+      width: 118px;
+      height: 118px;
+      border-radius: 10px;
+      background: #fff;
+      padding: 5px;
+      border: 1px solid #eee;
+    }
+
+    .card-back-qr img {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .flip-back-button {
+      margin-top: 10px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      padding: 7px 12px;
+      background: #111;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 800;
     }
 
     .quick-tabs {
@@ -554,17 +662,8 @@
     }
 
 
-    function getHomeUrl() {
-      return window.location.pathname;
-    }
-
-    function getBarcodeUrl() {
-      return window.location.pathname + '?view=barcode';
-    }
-
-    function isBarcodeView() {
-      const params = new URLSearchParams(window.location.search);
-      return params.get('view') === 'barcode';
+    function encodeUrlValue(value) {
+      return encodeURIComponent(String(value ?? ''));
     }
 
     async function post(action, payload = {}) {
@@ -668,11 +767,6 @@
 
       if (state.view === 'barcode') {
         renderBarcodePage();
-        return;
-      }
-
-      if (isBarcodeView()) {
-        renderBarcodeStaticPage();
         return;
       }
 
@@ -783,21 +877,45 @@
               <div class="top-icon">🔔</div>
             </div>
 
-            <div class="member-card">
-              <div class="card-left">
-                <div class="logo">解憂藥局</div>
-                <div class="card-name">${displayName}</div>
-                <div class="card-level">${level}</div>
+            <div class="member-card" id="memberCard" data-card-flip="1">
+              <div class="member-card-inner">
+                <div class="member-card-front">
+                  <div class="card-left">
+                    <div class="logo">解憂藥局</div>
+                    <div class="card-name">${displayName}</div>
+                    <div class="card-level">${level}</div>
+                  </div>
+
+                  <img class="avatar" src="${pictureUrl}" alt="會員頭像" />
+
+                  <button class="barcode-button" id="openBarcodeBtn" type="button" data-card-flip="1">
+                    <span>▦</span>
+                    <span>條碼</span>
+                  </button>
+
+                  <div class="points-pill">剩餘點數 ${points}</div>
+                </div>
+
+                <div class="member-card-back">
+                  <div class="card-back-info">
+                    <div class="card-back-title">會員條碼</div>
+                    <div class="card-back-code">${escapeHtml(member.barcodeValue || member.memberId)}</div>
+                    <div class="card-back-hint">
+                      請出示此 QR Code 給店員掃描累積點數。
+                    </div>
+                    <button class="flip-back-button" type="button" data-card-flip="1">
+                      返回會員卡
+                    </button>
+                  </div>
+
+                  <div class="card-back-qr">
+                    <img
+                      alt="會員 QR Code"
+                      src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=8&data=${encodeUrlValue(member.barcodeValue || member.memberId)}"
+                    />
+                  </div>
+                </div>
               </div>
-
-              <img class="avatar" src="${pictureUrl}" alt="會員頭像" />
-
-              <a class="barcode-button" id="openBarcodeBtn" href="${getBarcodeUrl()}">
-                <span>▦</span>
-                <span>條碼</span>
-              </a>
-
-              <div class="points-pill">剩餘點數 ${points}</div>
             </div>
 
             <div class="quick-tabs">
@@ -833,6 +951,28 @@
           renderHomePage();
         };
       });
+
+
+      const memberCard = document.getElementById('memberCard');
+      if (memberCard) {
+        memberCard.addEventListener('click', function (event) {
+          const target = event.target;
+          if (target && target.closest && target.closest('[data-card-flip="1"]')) {
+            event.preventDefault();
+            event.stopPropagation();
+            memberCard.classList.toggle('is-flipped');
+          }
+        });
+
+        memberCard.addEventListener('touchend', function (event) {
+          const target = event.target;
+          if (target && target.closest && target.closest('[data-card-flip="1"]')) {
+            event.preventDefault();
+            event.stopPropagation();
+            memberCard.classList.toggle('is-flipped');
+          }
+        }, { passive: false });
+      }
 
       renderContent();
     }
@@ -912,73 +1052,6 @@
       }
     }
 
-
-
-
-    function renderBarcodeStaticPage() {
-      const member = state.member;
-      const barcodeValue = String(member.barcodeValue || member.memberId);
-
-      app.className = '';
-      app.innerHTML = `
-        <div class="barcode-page">
-          <div class="barcode-page-card">
-            <a
-              class="barcode-page-close"
-              href="${getHomeUrl()}"
-              aria-label="關閉"
-            >
-              ×
-            </a>
-
-            <h2>會員條碼</h2>
-
-            <div class="barcode-box">
-              <svg id="barcodeSvg" class="barcode-svg"></svg>
-            </div>
-
-            <div class="member-code">${escapeHtml(barcodeValue)}</div>
-
-            <div class="qr-wrap">
-              <canvas id="qrCanvas"></canvas>
-            </div>
-
-            <p class="hint">
-              提醒您，以翻拍、截圖方式傳輸至其他設備，可能導致條碼無效。
-            </p>
-
-            <a
-              class="barcode-page-bottom-close"
-              href="${getHomeUrl()}"
-            >
-              關閉
-            </a>
-          </div>
-        </div>
-      `;
-
-      JsBarcode('#barcodeSvg', barcodeValue, {
-        format: 'CODE128',
-        displayValue: false,
-        height: 72,
-        margin: 0,
-        width: 2,
-      });
-
-      QRCode.toCanvas(
-        document.getElementById('qrCanvas'),
-        barcodeValue,
-        {
-          width: 230,
-          margin: 2,
-        },
-        function (error) {
-          if (error) {
-            console.error(error);
-          }
-        }
-      );
-    }
 
     function renderStaffScanPage() {
       app.className = '';
