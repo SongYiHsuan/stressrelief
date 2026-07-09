@@ -1071,10 +1071,11 @@
           <div class="list">
             ${state.coupons.map((c) => `
               <div class="coupon-card">
-                ${c.imageUrl ? `<img src="${escapeHtml(c.imageUrl)}" alt="${escapeHtml(c.title)}" loading="lazy" decoding="async">` : ''}
-                <h3>${escapeHtml(c.title)}</h3>
-                <p>${escapeHtml(c.description)}</p>
-                <span>狀態：${escapeHtml(c.status)}</span>
+                ${c.imageUrl ? `<img src="${escapeHtml(c.imageUrl)}" alt="${escapeHtml(c.title)}">` : ''}
+                <h3>${escapeHtml(c.title || '禮物券')}</h3>
+                <p>${escapeHtml(c.description || '')}</p>
+                <span>到期日：${escapeHtml(c.expiredAt || '未設定')}</span>
+                <span>券號：${escapeHtml(c.memberCouponId || c.id || '')}</span>
               </div>
             `).join('')}
           </div>
