@@ -634,6 +634,186 @@
         border-radius: 22px;
       }
     }
+  
+    .coupon-section-title {
+      margin: 8px 0 12px;
+      font-size: 22px;
+      font-weight: 900;
+      color: #263b43;
+    }
+
+    .coupon-native-card {
+      background: #fff;
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.09);
+      border: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
+    .coupon-native-img {
+      width: 100%;
+      height: 165px;
+      background: linear-gradient(135deg, #f9efc7, #d8bd58);
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+    }
+
+    .coupon-native-img img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      background: #f3f3f3;
+    }
+
+    .coupon-native-placeholder {
+      font-size: 38px;
+      font-weight: 900;
+      color: #7b6618;
+      letter-spacing: 0.08em;
+    }
+
+    .coupon-native-body {
+      padding: 16px;
+    }
+
+    .coupon-status-pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 6px 11px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 900;
+      margin-bottom: 10px;
+      background: #f1f1f1;
+      color: #666;
+    }
+
+    .coupon-status-pill.unclaimed {
+      background: #fff3d8;
+      color: #8a5a00;
+    }
+
+    .coupon-status-pill.claimed {
+      background: #e8fff0;
+      color: #078d3f;
+    }
+
+    .coupon-native-title {
+      margin: 0;
+      font-size: 23px;
+      line-height: 1.25;
+      font-weight: 900;
+      color: #263b43;
+    }
+
+    .coupon-native-desc {
+      margin: 9px 0 14px;
+      color: #647277;
+      line-height: 1.55;
+      font-size: 15px;
+    }
+
+    .coupon-info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin: 12px 0 14px;
+    }
+
+    .coupon-info-box {
+      background: #f8f8f8;
+      border-radius: 13px;
+      padding: 12px;
+    }
+
+    .coupon-info-label {
+      color: #8a8f90;
+      font-size: 12px;
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+
+    .coupon-info-value {
+      color: #253238;
+      font-size: 17px;
+      font-weight: 900;
+      line-height: 1.25;
+    }
+
+    .coupon-info-value.green {
+      color: #06b84f;
+      font-size: 22px;
+    }
+
+    .coupon-action-btn {
+      width: 100%;
+      border-radius: 15px;
+      padding: 14px;
+      background: #111;
+      color: #fff;
+      font-weight: 900;
+      font-size: 17px;
+      margin-top: 10px;
+    }
+
+    .coupon-action-btn.claim {
+      background: #06C755;
+    }
+
+    .coupon-action-btn:disabled {
+      background: #aaa;
+      opacity: 0.75;
+    }
+
+    .coupon-code-box {
+      margin-top: 12px;
+      background: #fafafa;
+      border-radius: 12px;
+      padding: 10px 12px;
+      color: #777;
+      font-size: 13px;
+      word-break: break-all;
+      line-height: 1.5;
+    }
+
+    .record-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .record-card {
+      background: #fff;
+      border-radius: 15px;
+      padding: 15px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+      border: 1px solid rgba(0, 0, 0, 0.04);
+    }
+
+    .record-title {
+      font-weight: 900;
+      font-size: 17px;
+      color: #263b43;
+      margin-bottom: 6px;
+    }
+
+    .record-meta {
+      color: #7a8589;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .record-amount {
+      font-size: 20px;
+      font-weight: 900;
+      color: #06b84f;
+    }
+
+    .record-amount.negative {
+      color: #c0392b;
+    }
+
   </style>
 </head>
 
@@ -695,7 +875,9 @@
       member: null,
       activities: [],
       coupons: [],
-      tab: 'activity',
+      couponUseLogs: [],
+      walletLogs: [],
+      tab: new URLSearchParams(window.location.search).get('tab') || 'coupon',
       view: 'home',
     };
 
@@ -951,24 +1133,19 @@
             </div>
 
             <div class="quick-tabs">
-              <button data-tab="activity" class="${state.tab === 'activity' ? 'active' : ''}" type="button">
-                <span class="tab-icon">⌂</span>
-                近期活動
-              </button>
-
               <button data-tab="coupon" class="${state.tab === 'coupon' ? 'active' : ''}" type="button">
                 <span class="tab-icon">🎁</span>
-                禮物券
+                優惠券
               </button>
 
-              <button data-tab="news" class="${state.tab === 'news' ? 'active' : ''}" type="button">
-                <span class="tab-icon">▣</span>
-                品牌動態
+              <button data-tab="couponHistory" class="${state.tab === 'couponHistory' ? 'active' : ''}" type="button">
+                <span class="tab-icon">✓</span>
+                使用紀錄
               </button>
 
-              <button data-tab="order" class="${state.tab === 'order' ? 'active' : ''}" type="button">
-                <span class="tab-icon">▤</span>
-                歷史訂單
+              <button data-tab="wallet" class="${state.tab === 'wallet' ? 'active' : ''}" type="button">
+                <span class="tab-icon">💰</span>
+                儲值紀錄
               </button>
             </div>
           </div>
@@ -1027,41 +1204,105 @@
       renderContent();
     }
 
+
+    async function claimCoupon(memberCouponId) {
+      const btn = document.querySelector(`[data-claim-coupon="${memberCouponId}"]`);
+      const oldText = btn ? btn.textContent : '';
+
+      try {
+        if (btn) {
+          btn.disabled = true;
+          btn.textContent = '領取中...';
+        }
+
+        await post('claimMemberCoupon', {
+          idToken: state.idToken,
+          memberCouponId,
+        });
+
+        const homeData = await post('getHomeData', {
+          idToken: state.idToken,
+        });
+
+        state.member = homeData.member || state.member;
+        state.coupons = homeData.coupons || [];
+        state.couponUseLogs = homeData.couponUseLogs || [];
+        state.walletLogs = homeData.walletLogs || [];
+
+        renderHomePage();
+      } catch (err) {
+        alert(err.message || String(err));
+
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = oldText;
+        }
+      }
+    }
+
+    function renderCouponCard(c) {
+      const isUnclaimed = String(c.status) === 'unclaimed';
+      const amountText = c.couponAmount ? `折抵 ${escapeHtml(c.couponAmount)} 元` : '會員優惠';
+      const statusText = isUnclaimed ? '未領取' : '已領取';
+
+      return `
+        <div class="coupon-native-card">
+          <div class="coupon-native-img">
+            ${c.imageUrl ? `<img src="${escapeHtml(c.imageUrl)}" alt="${escapeHtml(c.title || '優惠券')}">` : `<div class="coupon-native-placeholder">COUPON</div>`}
+          </div>
+
+          <div class="coupon-native-body">
+            <div class="coupon-status-pill ${isUnclaimed ? 'unclaimed' : 'claimed'}">
+              ${statusText}
+            </div>
+
+            <h3 class="coupon-native-title">${escapeHtml(c.title || '解憂藥局優惠券')}</h3>
+            <p class="coupon-native-desc">${escapeHtml(c.description || '可於有效期限內使用。')}</p>
+
+            <div class="coupon-info-grid">
+              <div class="coupon-info-box">
+                <div class="coupon-info-label">折抵金額</div>
+                <div class="coupon-info-value green">${amountText}</div>
+              </div>
+
+              <div class="coupon-info-box">
+                <div class="coupon-info-label">使用期限</div>
+                <div class="coupon-info-value">${escapeHtml(c.expiredAt || '未設定')}</div>
+              </div>
+            </div>
+
+            ${isUnclaimed ? `
+              <button
+                class="coupon-action-btn claim"
+                type="button"
+                data-claim-coupon="${escapeHtml(c.memberCouponId || c.id)}"
+                onclick="claimCoupon('${escapeHtml(c.memberCouponId || c.id)}')"
+              >
+                領取優惠券
+              </button>
+            ` : `
+              <div class="coupon-code-box">
+                已領取，使用時請出示給店員核銷。<br>
+                券號：${escapeHtml(c.memberCouponId || c.id || '')}
+              </div>
+            `}
+          </div>
+        </div>
+      `;
+    }
+
     function renderContent() {
       const content = document.getElementById('content');
 
-      if (state.tab === 'activity') {
-        if (!state.activities.length) {
-          content.innerHTML = `
-            <div class="empty">
-              <h2>近期活動</h2>
-              <p>目前尚無活動。</p>
-            </div>
-          `;
-          return;
-        }
-
-        content.innerHTML = `
-          <div class="list">
-            ${state.activities.map((a) => `
-              <div class="activity-card">
-                ${a.imageUrl ? `<img src="${escapeHtml(a.imageUrl)}" alt="${escapeHtml(a.title)}" loading="lazy" decoding="async">` : ''}
-                <h3>${escapeHtml(a.title)}</h3>
-                <p>${escapeHtml(a.content)}</p>
-                <span>到期日：${escapeHtml(a.endAt || '未設定')}</span>
-              </div>
-            `).join('')}
-          </div>
-        `;
-        return;
-      }
-
       if (state.tab === 'coupon') {
-        if (!state.coupons.length) {
+        const unclaimed = (state.coupons || []).filter((c) => String(c.status) === 'unclaimed');
+        const claimed = (state.coupons || []).filter((c) => String(c.status) === 'available');
+
+        if (!unclaimed.length && !claimed.length) {
           content.innerHTML = `
             <div class="empty">
-              <h2>禮物券</h2>
-              <p>目前沒有可用禮物券。</p>
+              <h2>優惠券</h2>
+              <p>目前沒有可用優惠券。</p>
             </div>
           `;
           return;
@@ -1069,13 +1310,40 @@
 
         content.innerHTML = `
           <div class="list">
-            ${state.coupons.map((c) => `
-              <div class="coupon-card">
-                ${c.imageUrl ? `<img src="${escapeHtml(c.imageUrl)}" alt="${escapeHtml(c.title)}">` : ''}
-                <h3>${escapeHtml(c.title || '禮物券')}</h3>
-                <p>${escapeHtml(c.description || '')}</p>
-                <span>到期日：${escapeHtml(c.expiredAt || '未設定')}</span>
-                <span>券號：${escapeHtml(c.memberCouponId || c.id || '')}</span>
+            ${unclaimed.length ? `
+              <div class="coupon-section-title">未領取</div>
+              ${unclaimed.map(renderCouponCard).join('')}
+            ` : ''}
+
+            ${claimed.length ? `
+              <div class="coupon-section-title">已領取</div>
+              ${claimed.map(renderCouponCard).join('')}
+            ` : ''}
+          </div>
+        `;
+        return;
+      }
+
+      if (state.tab === 'couponHistory') {
+        const logs = state.couponUseLogs || [];
+
+        if (!logs.length) {
+          content.innerHTML = `
+            <div class="empty">
+              <h2>優惠券使用紀錄</h2>
+              <p>目前尚無使用紀錄。</p>
+            </div>
+          `;
+          return;
+        }
+
+        content.innerHTML = `
+          <div class="record-list">
+            ${logs.map((log) => `
+              <div class="record-card">
+                <div class="record-title">${escapeHtml(log.title || '優惠券')}</div>
+                <div class="record-meta">使用時間：${escapeHtml(log.usedAt || '')}</div>
+                <div class="record-meta">券號：${escapeHtml(log.memberCouponId || '')}</div>
               </div>
             `).join('')}
           </div>
@@ -1083,21 +1351,35 @@
         return;
       }
 
-      if (state.tab === 'news') {
-        content.innerHTML = `
-          <div class="empty">
-            <h2>品牌動態</h2>
-            <p>最新公告、門市消息。</p>
-          </div>
-        `;
-        return;
-      }
+      if (state.tab === 'wallet') {
+        const logs = state.walletLogs || [];
 
-      if (state.tab === 'order') {
+        if (!logs.length) {
+          content.innerHTML = `
+            <div class="empty">
+              <h2>儲值紀錄</h2>
+              <p>目前尚無儲值紀錄。</p>
+            </div>
+          `;
+          return;
+        }
+
         content.innerHTML = `
-          <div class="empty">
-            <h2>歷史訂單</h2>
-            <p>訂單資料。</p>
+          <div class="record-list">
+            ${logs.map((log) => {
+              const amount = Number(log.amount || 0);
+              return `
+                <div class="record-card">
+                  <div class="record-title">${escapeHtml(log.type || '儲值紀錄')}</div>
+                  <div class="record-amount ${amount < 0 ? 'negative' : ''}">
+                    ${amount >= 0 ? '+' : ''}${escapeHtml(amount)}
+                  </div>
+                  <div class="record-meta">時間：${escapeHtml(log.createdAt || '')}</div>
+                  <div class="record-meta">方式：${escapeHtml(log.payMethod || '未設定')}</div>
+                  <div class="record-meta">備註：${escapeHtml(log.note || '')}</div>
+                </div>
+              `;
+            }).join('')}
           </div>
         `;
       }
