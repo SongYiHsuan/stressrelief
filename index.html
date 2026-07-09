@@ -293,7 +293,7 @@
 
     .quick-tabs {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(3, 1fr);
       margin-top: 18px;
     }
 
@@ -1419,6 +1419,7 @@
           <div class="record-list">
             ${logs.map((log) => {
               const amount = Number(log.amount || 0);
+
               return `
                 <div class="record-card">
                   <div class="record-title">${escapeHtml(log.type || '儲值紀錄')}</div>
