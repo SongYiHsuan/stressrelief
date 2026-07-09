@@ -1240,6 +1240,49 @@
       }
     }
 
+
+    async function useCoupon(memberCouponId) {
+      const btn = document.querySelector(`[data-use-coupon="${memberCouponId}"]`);
+      const oldText = btn ? btn.textContent : '';
+
+      const ok = confirm('確定要使用這張優惠券嗎？使用後會移到使用紀錄。');
+
+      if (!ok) {
+        return;
+      }
+
+      try {
+        if (btn) {
+          btn.disabled = true;
+          btn.textContent = '使用中...';
+        }
+
+        await post('useOwnMemberCoupon', {
+          idToken: state.idToken,
+          memberCouponId,
+        });
+
+        const homeData = await post('getHomeData', {
+          idToken: state.idToken,
+        });
+
+        state.member = homeData.member || state.member;
+        state.coupons = homeData.coupons || [];
+        state.couponUseLogs = homeData.couponUseLogs || [];
+        state.walletLogs = homeData.walletLogs || [];
+
+        state.tab = 'couponHistory';
+        renderHomePage();
+      } catch (err) {
+        alert(err.message || String(err));
+
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = oldText;
+        }
+      }
+    }
+
     function renderCouponCard(c) {
       const isUnclaimed = String(c.status) === 'unclaimed';
       const amountText = c.couponAmount ? `折抵 ${escapeHtml(c.couponAmount)} 元` : '會員優惠';
@@ -1281,8 +1324,16 @@
                 領取優惠券
               </button>
             ` : `
+              <button
+                class="coupon-action-btn"
+                type="button"
+                data-use-coupon="${escapeHtml(c.memberCouponId || c.id)}"
+                onclick="useCoupon('${escapeHtml(c.memberCouponId || c.id)}')"
+              >
+                使用該券
+              </button>
+
               <div class="coupon-code-box">
-                已領取，使用時請出示給店員核銷。<br>
                 券號：${escapeHtml(c.memberCouponId || c.id || '')}
               </div>
             `}
