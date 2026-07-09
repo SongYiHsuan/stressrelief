@@ -814,6 +814,30 @@
       color: #c0392b;
     }
 
+  
+    .coupon-used-record {
+      padding: 16px 16px 14px;
+    }
+
+    .used-coupon-amount {
+      display: inline-flex;
+      align-items: center;
+      margin: 4px 0 8px;
+      padding: 6px 11px;
+      border-radius: 999px;
+      background: #e8fff0;
+      color: #078d3f;
+      font-size: 16px;
+      font-weight: 900;
+    }
+
+    .record-code {
+      font-size: 12px;
+      color: #9aa1a4;
+      word-break: break-all;
+      margin-top: 4px;
+    }
+
   </style>
 </head>
 
@@ -894,6 +918,58 @@
     function encodeUrlValue(value) {
       return encodeURIComponent(String(value ?? ''));
     }
+
+    function formatSimpleDateTime(value) {
+      const raw = String(value ?? '').trim();
+
+      if (!raw) return '';
+
+      let d = null;
+
+      // ISO 格式：2026-07-09T06:48:43.000Z
+      if (raw.includes('T')) {
+        const parsed = new Date(raw);
+
+        if (!Number.isNaN(parsed.getTime())) {
+          d = parsed;
+        }
+      }
+
+      // 一般格式：2026/07/09 18:00:00 或 2026-07-09 18:00:00
+      if (!d) {
+        const normalized = raw.replace(/-/g, '/');
+        const parsed = new Date(normalized);
+
+        if (!Number.isNaN(parsed.getTime())) {
+          d = parsed;
+        }
+      }
+
+      if (!d) {
+        return raw
+          .replace(/-/g, '/')
+          .replace('T', ' ')
+          .replace('.000Z', '')
+          .slice(0, 16);
+      }
+
+      const y = d.getFullYear();
+      const m = d.getMonth() + 1;
+      const day = d.getDate();
+      const hh = String(d.getHours()).padStart(2, '0');
+      const mm = String(d.getMinutes()).padStart(2, '0');
+
+      return `${y}/${m}/${day} ${hh}:${mm}`;
+    }
+
+    function formatSimpleDate(value) {
+      const text = formatSimpleDateTime(value);
+
+      if (!text) return '';
+
+      return text.split(' ')[0];
+    }
+
 
     async function post(action, payload = {}) {
       if (!GAS_API_URL || GAS_API_URL.includes('你的')) {
@@ -1310,7 +1386,7 @@
 
               <div class="coupon-info-box">
                 <div class="coupon-info-label">使用期限</div>
-                <div class="coupon-info-value">${escapeHtml(c.expiredAt || '未設定')}</div>
+                <div class="coupon-info-value">${escapeHtml(formatSimpleDate(c.expiredAt) || '未設定')}</div>
               </div>
             </div>
 
@@ -1390,13 +1466,24 @@
 
         content.innerHTML = `
           <div class="record-list">
-            ${logs.map((log) => `
-              <div class="record-card">
-                <div class="record-title">${escapeHtml(log.title || '優惠券')}</div>
-                <div class="record-meta">使用時間：${escapeHtml(log.usedAt || '')}</div>
-                <div class="record-meta">券號：${escapeHtml(log.memberCouponId || '')}</div>
-              </div>
-            `).join('')}
+            ${logs.map((log) => {
+              const amountText = log.couponAmount ? `折抵 ${escapeHtml(log.couponAmount)} 元` : '優惠券';
+              const usedAtText = formatSimpleDateTime(log.usedAt);
+
+              return `
+                <div class="record-card coupon-used-record">
+                  <div class="record-title">${escapeHtml(log.title || '優惠券')}</div>
+
+                  <div class="used-coupon-amount">${amountText}</div>
+
+                  <div class="record-meta">使用時間：${escapeHtml(usedAtText || '未記錄')}</div>
+
+                  <div class="record-meta record-code">
+                    券號：${escapeHtml(log.memberCouponId || '')}
+                  </div>
+                </div>
+              `;
+            }).join('')}
           </div>
         `;
         return;
@@ -1426,7 +1513,7 @@
                   <div class="record-amount ${amount < 0 ? 'negative' : ''}">
                     ${amount >= 0 ? '+' : ''}${escapeHtml(amount)}
                   </div>
-                  <div class="record-meta">時間：${escapeHtml(log.createdAt || '')}</div>
+                  <div class="record-meta">時間：${escapeHtml(formatSimpleDateTime(log.createdAt) || '')}</div>
                   <div class="record-meta">方式：${escapeHtml(log.payMethod || '未設定')}</div>
                   <div class="record-meta">備註：${escapeHtml(log.note || '')}</div>
                 </div>
