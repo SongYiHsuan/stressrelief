@@ -861,6 +861,8 @@
             member: state.member,
             activities: state.activities || [],
             coupons: state.coupons || [],
+            couponUseLogs: state.couponUseLogs || [],
+            walletLogs: state.walletLogs || [],
             savedAt: Date.now(),
           })
         );
@@ -1667,6 +1669,8 @@
         state.member = cached.member;
         state.activities = cached.activities || [];
         state.coupons = cached.coupons || [];
+        state.couponUseLogs = cached.couponUseLogs || [];
+        state.walletLogs = cached.walletLogs || [];
         render();
       }
 
@@ -1689,6 +1693,8 @@
         state.member = bootData.member;
         state.activities = state.activities || [];
         state.coupons = state.coupons || [];
+        state.couponUseLogs = state.couponUseLogs || [];
+        state.walletLogs = state.walletLogs || [];
 
         render();
         saveMemberCache();
@@ -1700,6 +1706,8 @@
             state.member = homeData.member || bootData.member;
             state.activities = homeData.activities || [];
             state.coupons = homeData.coupons || [];
+            state.couponUseLogs = homeData.couponUseLogs || [];
+            state.walletLogs = homeData.walletLogs || [];
             saveMemberCache();
             render();
           })
