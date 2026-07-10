@@ -1081,7 +1081,7 @@
         <div class="verify-page">
           <div class="verify-card">
             <h1>綁定手機號碼</h1>
-            <p>第一次使用解憂藥局會員功能，請先完成手機驗證。</p>
+            <p>請輸入手機號碼，完成會員資料綁定。</p>
 
             <input
               id="phoneInput"
@@ -1089,76 +1089,40 @@
               inputmode="tel"
             />
 
-            <button id="sendOtpBtn">傳送驗證碼</button>
-
-            <div id="otpArea" style="display:none;">
-              <input
-                id="codeInput"
-                placeholder="輸入 6 位數驗證碼"
-                inputmode="numeric"
-              />
-
-              <div id="debugCode" class="debug-code" style="display:none;"></div>
-
-              <button id="verifyOtpBtn">完成驗證</button>
-            </div>
+            <button id="bindPhoneBtn" type="button">完成綁定</button>
 
             <div id="verifyMsg" class="message"></div>
           </div>
         </div>
       `;
 
-      let otpId = '';
-
-      document.getElementById('sendOtpBtn').onclick = async () => {
+      document.getElementById('bindPhoneBtn').onclick = async () => {
         const phone = document.getElementById('phoneInput').value.trim();
+        const btn = document.getElementById('bindPhoneBtn');
         const msg = document.getElementById('verifyMsg');
-        const debugCode = document.getElementById('debugCode');
 
         msg.textContent = '';
 
         try {
-          const data = await post('sendOtp', {
+          btn.disabled = true;
+          btn.textContent = '綁定中...';
+
+          const data = await post('bindPhoneDirect', {
             idToken: state.idToken,
             phone,
           });
 
-          otpId = data.otpId;
-
-          document.getElementById('otpArea').style.display = 'block';
-
-          if (data.debugCode) {
-            debugCode.style.display = 'block';
-            debugCode.textContent = '測試驗證碼：' + data.debugCode;
-          }
-
-          msg.textContent = '驗證碼已送出，請輸入 6 位數驗證碼。';
+          state.member = data.member;
+          saveMemberCache();
+          renderHomePage();
         } catch (err) {
           msg.textContent = err.message || String(err);
-        }
-      };
-
-      document.getElementById('verifyOtpBtn').onclick = async () => {
-        const code = document.getElementById('codeInput').value.trim();
-        const msg = document.getElementById('verifyMsg');
-
-        msg.textContent = '';
-
-        try {
-          const data = await post('verifyOtp', {
-            idToken: state.idToken,
-            otpId,
-            code,
-          });
-
-          setState({
-            member: data.member,
-          });
-        } catch (err) {
-          msg.textContent = err.message || String(err);
+          btn.disabled = false;
+          btn.textContent = '完成綁定';
         }
       };
     }
+
 
     function renderHomePage() {
       const member = state.member;
