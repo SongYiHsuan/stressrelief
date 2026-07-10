@@ -172,18 +172,11 @@
       position: relative !important;
       z-index: 2 !important;
       width: 150px !important;
+      padding-top: 76px !important;
     }
 
     .logo {
-      width: 82px !important;
-      height: 30px !important;
-      background: rgba(255, 255, 255, 0.86) !important;
-      color: #111 !important;
-      display: grid !important;
-      place-items: center !important;
-      font-weight: 900 !important;
-      font-size: 12px !important;
-      margin-bottom: 64px !important;
+      display: none !important;
     }
 
     .card-name {
@@ -1143,7 +1136,7 @@
       const pictureUrl = escapeHtml(
         member.pictureUrl || 'https://placehold.co/160x160?text=會員'
       );
-      const points = Number(member.points || 0);
+      const points = Number(member.storedValue ?? member.points ?? 0);
       const memberCode = String(member.barcodeValue || member.memberId || '');
       const qrUrl =
         'https://api.qrserver.com/v1/create-qr-code/?size=520x520&margin=2&data=' +
