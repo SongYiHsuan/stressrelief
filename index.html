@@ -851,7 +851,7 @@
 
     const app = document.getElementById('app');
 
-    const CACHE_KEY = 'stressrelief_member_cache_v1';
+    const CACHE_KEY = 'stressrelief_member_cache_v2';
 
     function saveMemberCache() {
       try {
@@ -1080,8 +1080,8 @@
       app.innerHTML = `
         <div class="verify-page">
           <div class="verify-card">
-            <h1>綁定手機號碼</h1>
-            <p>請輸入手機號碼，完成會員資料綁定。</p>
+            <h1>會員註冊</h1>
+            <p>請輸入手機號碼，送出後即可完成會員註冊。</p>
 
             <input
               id="phoneInput"
@@ -1089,7 +1089,7 @@
               inputmode="tel"
             />
 
-            <button id="bindPhoneBtn" type="button">完成綁定</button>
+            <button id="bindPhoneBtn" type="button">送出註冊</button>
 
             <div id="verifyMsg" class="message"></div>
           </div>
@@ -1105,20 +1105,32 @@
 
         try {
           btn.disabled = true;
-          btn.textContent = '綁定中...';
+          btn.textContent = '送出中...';
 
           const data = await post('bindPhoneDirect', {
             idToken: state.idToken,
             phone,
           });
 
-          state.member = data.member;
+          const homeData = await post('getHomeData', {
+            idToken: state.idToken,
+          });
+
+          state.member = homeData.member || data.member;
+          state.activities = homeData.activities || [];
+          state.coupons = homeData.coupons || [];
+          state.couponUseLogs = homeData.couponUseLogs || [];
+          state.walletLogs = homeData.walletLogs || [];
+          state.loading = false;
+          state.error = '';
+
           saveMemberCache();
           renderHomePage();
         } catch (err) {
-          msg.textContent = err.message || String(err);
+          console.error(err);
+          msg.textContent = err.message || '註冊失敗，請稍後再試';
           btn.disabled = false;
-          btn.textContent = '完成綁定';
+          btn.textContent = '送出註冊';
         }
       };
     }
