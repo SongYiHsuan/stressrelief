@@ -837,6 +837,168 @@
       margin-top: 4px;
     }
 
+  
+    /* ===== 會員首頁整體視覺微調 v2 ===== */
+
+    .hero {
+      background: linear-gradient(145deg, #202020 0%, #3a3731 58%, #1f1f1f 100%) !important;
+      color: white !important;
+      padding: env(safe-area-inset-top) 0 0 !important;
+      overflow: hidden !important;
+    }
+
+    .topbar {
+      width: 100% !important;
+      min-height: 70px !important;
+      height: 70px !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      padding: 8px 16px 7px !important;
+      background: #ffffff !important;
+      overflow: hidden !important;
+    }
+
+    .top-icon,
+    .title {
+      display: none !important;
+    }
+
+    .header-logo {
+      width: min(64vw, 245px) !important;
+      max-width: 245px !important;
+      max-height: 48px !important;
+      height: auto !important;
+      display: block !important;
+      object-fit: contain !important;
+      margin: 0 auto !important;
+    }
+
+    .member-card {
+      width: calc(100% - 36px) !important;
+      max-width: 430px !important;
+      height: 185px !important;
+      min-height: 185px !important;
+      max-height: 185px !important;
+      margin: 16px auto 0 !important;
+      border-radius: 18px !important;
+      overflow: visible !important;
+    }
+
+    .member-card-inner {
+      height: 185px !important;
+      min-height: 185px !important;
+      max-height: 185px !important;
+      border-radius: 18px !important;
+      box-shadow: 0 14px 34px rgba(0, 0, 0, 0.28) !important;
+    }
+
+    .member-card-front,
+    .member-card-back {
+      height: 185px !important;
+      min-height: 185px !important;
+      max-height: 185px !important;
+      border-radius: 18px !important;
+    }
+
+    .member-card-front {
+      padding: 18px 20px !important;
+      background:
+        radial-gradient(circle at 72% 30%, rgba(255, 245, 150, 0.95) 0%, rgba(210, 185, 73, 0.92) 28%, rgba(91, 82, 43, 0.92) 58%, rgba(34, 34, 28, 1) 100%) !important;
+    }
+
+    .card-left {
+      width: 160px !important;
+      padding-top: 76px !important;
+    }
+
+    .logo {
+      display: none !important;
+    }
+
+    .card-name {
+      max-width: 165px !important;
+      font-size: 21px !important;
+      line-height: 1.15 !important;
+      font-weight: 900 !important;
+    }
+
+    .card-level {
+      max-width: 165px !important;
+      margin-top: 7px !important;
+      font-size: 14px !important;
+      opacity: 0.96 !important;
+    }
+
+    .avatar {
+      width: 110px !important;
+      height: 110px !important;
+      left: 53% !important;
+      top: 36px !important;
+      border: 5px solid rgba(255, 255, 255, 0.94) !important;
+      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.16) !important;
+    }
+
+    .points-pill {
+      top: 16px !important;
+      right: 16px !important;
+      padding: 8px 13px !important;
+      font-size: 17px !important;
+      background: rgba(43, 40, 19, 0.58) !important;
+      color: #ffef5f !important;
+      border-radius: 999px !important;
+      letter-spacing: 0.02em !important;
+    }
+
+    .quick-tabs {
+      width: 100% !important;
+      margin-top: 18px !important;
+      padding: 0 14px !important;
+      display: grid !important;
+      grid-template-columns: repeat(3, 1fr) !important;
+    }
+
+    .quick-tabs button {
+      padding: 8px 4px 14px !important;
+      font-size: 16px !important;
+      color: rgba(255, 255, 255, 0.62) !important;
+    }
+
+    .quick-tabs button.active {
+      color: #ffffff !important;
+      border-bottom-color: #ffe500 !important;
+    }
+
+    .quick-tabs .tab-icon {
+      font-size: 25px !important;
+    }
+
+    .content {
+      margin-top: 0 !important;
+      border-radius: 22px 22px 0 0 !important;
+      padding-top: 26px !important;
+    }
+
+    @media (max-width: 380px) {
+      .member-card {
+        width: calc(100% - 28px) !important;
+      }
+
+      .header-logo {
+        width: min(68vw, 230px) !important;
+        max-height: 44px !important;
+      }
+
+      .avatar {
+        width: 104px !important;
+        height: 104px !important;
+      }
+
+      .points-pill {
+        font-size: 15px !important;
+      }
+    }
+
   </style>
 </head>
 
