@@ -1181,31 +1181,7 @@
         transform: rotate(360deg);
       }
     }
-
-    .front-refresh-toast {
-      position: fixed;
-      left: 50%;
-      top: calc(env(safe-area-inset-top) + 14px);
-      transform: translateX(-50%);
-      z-index: 99999;
-      background: rgba(17, 17, 17, 0.88);
-      color: #fff;
-      padding: 9px 14px;
-      border-radius: 999px;
-      font-size: 14px;
-      font-weight: 900;
-      pointer-events: none;
-      opacity: 0;
-      transition: opacity 0.18s ease, transform 0.18s ease;
-    }
-
-    .front-refresh-toast.show {
-      opacity: 1;
-      transform: translateX(-50%) translateY(4px);
-    }
-
-  
-    /* ===== 前台右上角更新按鈕 + 會員卡固定上方 ===== */
+/* ===== 前台右上角更新按鈕 + 會員卡固定上方 ===== */
 
     .hero {
       position: sticky !important;
@@ -1236,6 +1212,76 @@
       border: 1px solid rgba(255, 255, 255, 0.7) !important;
       z-index: 9 !important;
       -webkit-tap-highlight-color: transparent;
+    }
+
+    .front-refresh-btn:active {
+      transform: translateY(-50%) scale(0.96) !important;
+    }
+
+    .front-refresh-btn:disabled {
+      opacity: 0.78 !important;
+    }
+
+    .front-refresh-btn.is-loading .front-refresh-icon {
+      animation: frontRefreshSpin 0.8s linear infinite !important;
+    }
+
+    @keyframes frontRefreshSpin {
+      from {
+        transform: rotate(0deg);
+      }
+
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+  
+    /* ===== 最終版：右上角轉圈更新 + 會員卡區固定上方 ===== */
+
+    .app-shell {
+      padding-top: var(--front-hero-height, 300px) !important;
+      min-height: 100vh !important;
+      background: #ffffff !important;
+    }
+
+    .hero {
+      position: fixed !important;
+      top: 0 !important;
+      left: 50% !important;
+      right: auto !important;
+      transform: translateX(-50%) !important;
+      width: 100% !important;
+      max-width: 480px !important;
+      z-index: 5000 !important;
+      overflow: visible !important;
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12) !important;
+      background: linear-gradient(145deg, #202020 0%, #3a3731 58%, #1f1f1f 100%) !important;
+    }
+
+    .topbar {
+      position: relative !important;
+      overflow: visible !important;
+    }
+
+    .front-refresh-btn {
+      position: absolute !important;
+      right: 14px !important;
+      top: 50% !important;
+      transform: translateY(-50%) !important;
+      width: 40px !important;
+      height: 40px !important;
+      border-radius: 999px !important;
+      background: rgba(255, 255, 255, 0.96) !important;
+      color: #253238 !important;
+      display: grid !important;
+      place-items: center !important;
+      font-size: 23px !important;
+      font-weight: 900 !important;
+      box-shadow: 0 7px 16px rgba(0, 0, 0, 0.12) !important;
+      border: 1px solid rgba(255, 255, 255, 0.7) !important;
+      z-index: 20 !important;
+      -webkit-tap-highlight-color: transparent !important;
     }
 
     .front-refresh-btn:active {
@@ -1619,32 +1665,10 @@
       btn.setAttribute('aria-label', isLoading ? '更新中' : '重新整理');
       btn.setAttribute('title', isLoading ? '更新中' : '重新整理');
     }
-
-    function showFrontRefreshToast(message) {
-      let toast = document.getElementById('frontRefreshToast');
-
-      if (!toast) {
-        toast = document.createElement('div');
-        toast.id = 'frontRefreshToast';
-        toast.className = 'front-refresh-toast';
-        document.body.appendChild(toast);
-      }
-
-      toast.textContent = message;
-      toast.classList.add('show');
-
-      window.clearTimeout(showFrontRefreshToast.timer);
-      showFrontRefreshToast.timer = window.setTimeout(() => {
-        toast.classList.remove('show');
-      }, 1200);
-    }
-
-    async function refreshFrontHomeData(options = {}) {
+    async function refreshFrontHomeData() {
       if (!state.idToken || state.refreshing) {
         return;
       }
-
-      const showToast = options.showToast !== false;
 
       state.refreshing = true;
       setFrontRefreshButton(true);
@@ -1659,24 +1683,30 @@
         state.coupons = homeData.coupons || [];
         state.couponUseLogs = homeData.couponUseLogs || [];
         state.walletLogs = homeData.walletLogs || [];
-        state.lastRefreshedAt = Date.now();
 
         saveMemberCache();
         renderHomePage();
-
-        if (showToast) {
-          showFrontRefreshToast('已更新');
-        }
       } catch (err) {
-        console.error(err);
-
-        if (showToast) {
-          showFrontRefreshToast(err.message || '更新失敗');
-        }
+        console.error('前台重新整理失敗', err);
       } finally {
         state.refreshing = false;
         setFrontRefreshButton(false);
       }
+    }
+
+    function updateFixedHeroOffset() {
+      const hero = document.querySelector('.hero');
+
+      if (!hero) {
+        return;
+      }
+
+      const height = Math.ceil(hero.getBoundingClientRect().height);
+
+      document.documentElement.style.setProperty(
+        '--front-hero-height',
+        height + 'px'
+      );
     }
 
     function renderHomePage() {
@@ -1760,16 +1790,9 @@
         btn.onclick = () => {
           state.tab = btn.dataset.tab;
           renderHomePage();
-          refreshMemberData({ silent: true });
+          refreshFrontHomeData();
         };
-      });
-
-      const refreshBtn = document.getElementById('refreshMemberBtn');
-
-      if (refreshBtn) {
-        refreshBtn.onclick = async () => {
-          await refreshMemberData({ silent: false });
-        };
+      });;
       }
 
       const memberCard = document.getElementById('memberCard');
@@ -1813,6 +1836,7 @@
       }
 
       renderContent();
+      updateFixedHeroOffset();
     }
 
 
@@ -2292,6 +2316,11 @@
       event.stopPropagation();
 
       refreshFrontHomeData();
+    });
+
+    window.addEventListener('resize', updateFixedHeroOffset);
+    window.addEventListener('orientationchange', () => {
+      setTimeout(updateFixedHeroOffset, 300);
     });
 
     boot();
