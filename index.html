@@ -1161,6 +1161,75 @@
       transform: scale(0.98);
     }
 
+  
+    .topbar {
+      position: relative !important;
+    }
+
+    .front-refresh-btn {
+      position: absolute;
+      right: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 42px;
+      height: 42px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.96);
+      color: #253238;
+      display: grid;
+      place-items: center;
+      font-size: 22px;
+      font-weight: 900;
+      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.7);
+      z-index: 5;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .front-refresh-btn:active {
+      transform: translateY(-50%) scale(0.96);
+    }
+
+    .front-refresh-btn:disabled {
+      opacity: 0.72;
+    }
+
+    .front-refresh-btn.is-loading .front-refresh-icon {
+      animation: frontRefreshSpin 0.85s linear infinite;
+    }
+
+    @keyframes frontRefreshSpin {
+      from {
+        transform: rotate(0deg);
+      }
+
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .front-refresh-toast {
+      position: fixed;
+      left: 50%;
+      top: calc(env(safe-area-inset-top) + 14px);
+      transform: translateX(-50%);
+      z-index: 99999;
+      background: rgba(17, 17, 17, 0.88);
+      color: #fff;
+      padding: 9px 14px;
+      border-radius: 999px;
+      font-size: 14px;
+      font-weight: 900;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.18s ease, transform 0.18s ease;
+    }
+
+    .front-refresh-toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(4px);
+    }
+
   </style>
 </head>
 
@@ -1508,6 +1577,78 @@
       return `${hh}:${mm} 更新`;
     }
 
+    function setFrontRefreshButton(isLoading) {
+      const btn = document.getElementById('frontRefreshBtn');
+
+      if (!btn) {
+        return;
+      }
+
+      btn.disabled = isLoading;
+      btn.classList.toggle('is-loading', isLoading);
+      btn.setAttribute('aria-label', isLoading ? '更新中' : '重新整理');
+      btn.setAttribute('title', isLoading ? '更新中' : '重新整理');
+    }
+
+    function showFrontRefreshToast(message) {
+      let toast = document.getElementById('frontRefreshToast');
+
+      if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'frontRefreshToast';
+        toast.className = 'front-refresh-toast';
+        document.body.appendChild(toast);
+      }
+
+      toast.textContent = message;
+      toast.classList.add('show');
+
+      window.clearTimeout(showFrontRefreshToast.timer);
+      showFrontRefreshToast.timer = window.setTimeout(() => {
+        toast.classList.remove('show');
+      }, 1200);
+    }
+
+    async function refreshFrontHomeData(options = {}) {
+      if (!state.idToken || state.refreshing) {
+        return;
+      }
+
+      const showToast = options.showToast !== false;
+
+      state.refreshing = true;
+      setFrontRefreshButton(true);
+
+      try {
+        const homeData = await post('getHomeData', {
+          idToken: state.idToken,
+        });
+
+        state.member = homeData.member || state.member;
+        state.activities = homeData.activities || [];
+        state.coupons = homeData.coupons || [];
+        state.couponUseLogs = homeData.couponUseLogs || [];
+        state.walletLogs = homeData.walletLogs || [];
+        state.lastRefreshedAt = Date.now();
+
+        saveMemberCache();
+        renderHomePage();
+
+        if (showToast) {
+          showFrontRefreshToast('已更新');
+        }
+      } catch (err) {
+        console.error(err);
+
+        if (showToast) {
+          showFrontRefreshToast(err.message || '更新失敗');
+        }
+      } finally {
+        state.refreshing = false;
+        setFrontRefreshButton(false);
+      }
+    }
+
     function renderHomePage() {
       const member = state.member;
       const displayName = escapeHtml(member.displayName || '會員');
@@ -1531,6 +1672,9 @@
                 src="images/stresslogo.png"
                 alt="解憂藥局 The Relief Pharmacy"
               />
+              <button class="front-refresh-btn" id="frontRefreshBtn" type="button" aria-label="重新整理" title="重新整理">
+                <span class="front-refresh-icon">↻</span>
+              </button>
             </div>
 
             <div class="member-card" id="memberCard">
@@ -1674,7 +1818,9 @@
         state.coupons = homeData.coupons || [];
         state.couponUseLogs = homeData.couponUseLogs || [];
         state.walletLogs = homeData.walletLogs || [];
+        state.lastRefreshedAt = Date.now();
 
+        saveMemberCache();
         renderHomePage();
       } catch (err) {
         alert(err.message || String(err));
@@ -2111,6 +2257,21 @@
         refreshMemberData({ silent: true });
       }
     }, 15000);
+
+
+    // frontRefreshBtn clicked by delegation
+    document.addEventListener('click', function (event) {
+      const btn = event.target.closest && event.target.closest('#frontRefreshBtn');
+
+      if (!btn) {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+
+      refreshFrontHomeData({ showToast: true });
+    });
 
     boot();
   </script>
