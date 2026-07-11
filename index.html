@@ -1136,33 +1136,7 @@
         max-height: 174px !important;
       }
     }
-
-  
-    .refresh-row {
-      display: flex;
-      align-items: center;
-      justify-content: flex-end;
-      gap: 10px;
-      margin: -6px 0 16px;
-      color: #9aa1a4;
-      font-size: 13px;
-    }
-
-    .refresh-row button {
-      border-radius: 999px;
-      padding: 7px 12px;
-      background: #f2f3f4;
-      color: #253238;
-      font-size: 13px;
-      font-weight: 800;
-    }
-
-    .refresh-row button:active {
-      transform: scale(0.98);
-    }
-
-  
-    .topbar {
+.topbar {
       position: relative !important;
     }
 
@@ -1228,6 +1202,62 @@
     .front-refresh-toast.show {
       opacity: 1;
       transform: translateX(-50%) translateY(4px);
+    }
+
+  
+    /* ===== 前台右上角更新按鈕 + 會員卡固定上方 ===== */
+
+    .hero {
+      position: sticky !important;
+      top: 0 !important;
+      z-index: 2000 !important;
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12) !important;
+    }
+
+    .topbar {
+      position: relative !important;
+    }
+
+    .front-refresh-btn {
+      position: absolute !important;
+      right: 0 !important;
+      top: 50% !important;
+      transform: translateY(-50%) !important;
+      width: 42px !important;
+      height: 42px !important;
+      border-radius: 999px !important;
+      background: rgba(255, 255, 255, 0.96) !important;
+      color: #253238 !important;
+      display: grid !important;
+      place-items: center !important;
+      font-size: 23px !important;
+      font-weight: 900 !important;
+      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.12) !important;
+      border: 1px solid rgba(255, 255, 255, 0.7) !important;
+      z-index: 9 !important;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .front-refresh-btn:active {
+      transform: translateY(-50%) scale(0.96) !important;
+    }
+
+    .front-refresh-btn:disabled {
+      opacity: 0.78 !important;
+    }
+
+    .front-refresh-btn.is-loading .front-refresh-icon {
+      animation: frontRefreshSpin 0.8s linear infinite !important;
+    }
+
+    @keyframes frontRefreshSpin {
+      from {
+        transform: rotate(0deg);
+      }
+
+      to {
+        transform: rotate(360deg);
+      }
     }
 
   </style>
@@ -1722,16 +1752,7 @@
             </div>
           </div>
 
-          <main class="content">
-            <div class="refresh-row">
-              <span>${escapeHtml(formatLastRefreshText())}</span>
-              <button type="button" id="refreshMemberBtn">
-                ${state.refreshing ? '更新中...' : '重新整理'}
-              </button>
-            </div>
-
-            <div id="content"></div>
-          </main>
+          <main class="content" id="content"></main>
         </div>
       `;
 
@@ -2270,7 +2291,7 @@
       event.preventDefault();
       event.stopPropagation();
 
-      refreshFrontHomeData({ showToast: true });
+      refreshFrontHomeData();
     });
 
     boot();
