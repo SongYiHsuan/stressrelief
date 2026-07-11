@@ -1260,6 +1260,29 @@
       }
     }
 
+  
+    /* ===== 右上角更新按鈕轉圈強化 ===== */
+
+    .front-refresh-btn.is-loading .front-refresh-icon {
+      display: inline-block !important;
+      animation: frontRefreshSpin 0.75s linear infinite !important;
+    }
+
+    .front-refresh-btn.is-loading {
+      opacity: 0.88 !important;
+      pointer-events: none !important;
+    }
+
+    @keyframes frontRefreshSpin {
+      from {
+        transform: rotate(0deg);
+      }
+
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
   </style>
 </head>
 
@@ -1620,6 +1643,12 @@
       btn.setAttribute('title', isLoading ? '更新中' : '重新整理');
     }
 
+      btn.disabled = isLoading;
+      btn.classList.toggle('is-loading', isLoading);
+      btn.setAttribute('aria-label', isLoading ? '更新中' : '重新整理');
+      btn.setAttribute('title', isLoading ? '更新中' : '重新整理');
+    }
+
     function showFrontRefreshToast(message) {
       let toast = document.getElementById('frontRefreshToast');
 
@@ -1639,15 +1668,15 @@
       }, 1200);
     }
 
-    async function refreshFrontHomeData(options = {}) {
+    async function refreshFrontHomeData() {
       if (!state.idToken || state.refreshing) {
         return;
       }
 
-      const showToast = options.showToast !== false;
-
       state.refreshing = true;
       setFrontRefreshButton(true);
+
+      const startedAt = Date.now();
 
       try {
         const homeData = await post('getHomeData', {
@@ -1662,20 +1691,25 @@
         state.lastRefreshedAt = Date.now();
 
         saveMemberCache();
-        renderHomePage();
 
-        if (showToast) {
-          showFrontRefreshToast('已更新');
-        }
+        const elapsed = Date.now() - startedAt;
+        const wait = Math.max(0, 800 - elapsed);
+
+        window.setTimeout(() => {
+          renderHomePage();
+          state.refreshing = false;
+          setFrontRefreshButton(false);
+        }, wait);
       } catch (err) {
-        console.error(err);
+        console.error('refreshFrontHomeData failed', err);
 
-        if (showToast) {
-          showFrontRefreshToast(err.message || '更新失敗');
-        }
-      } finally {
-        state.refreshing = false;
-        setFrontRefreshButton(false);
+        const elapsed = Date.now() - startedAt;
+        const wait = Math.max(0, 800 - elapsed);
+
+        window.setTimeout(() => {
+          state.refreshing = false;
+          setFrontRefreshButton(false);
+        }, wait);
       }
     }
 
