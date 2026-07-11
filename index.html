@@ -1137,6 +1137,30 @@
       }
     }
 
+  
+    .refresh-row {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+      margin: -6px 0 16px;
+      color: #9aa1a4;
+      font-size: 13px;
+    }
+
+    .refresh-row button {
+      border-radius: 999px;
+      padding: 7px 12px;
+      background: #f2f3f4;
+      color: #253238;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .refresh-row button:active {
+      transform: scale(0.98);
+    }
+
   </style>
 </head>
 
@@ -1202,6 +1226,8 @@
       coupons: [],
       couponUseLogs: [],
       walletLogs: [],
+      refreshing: false,
+      lastRefreshedAt: 0,
       tab: new URLSearchParams(window.location.search).get('tab') || 'coupon',
       view: 'home',
     };
@@ -1435,6 +1461,53 @@
     }
 
 
+    async function refreshMemberData(options = {}) {
+      if (!state.idToken || state.refreshing) {
+        return;
+      }
+
+      const silent = options.silent !== false;
+
+      try {
+        state.refreshing = true;
+
+        const homeData = await post('getHomeData', {
+          idToken: state.idToken,
+        });
+
+        state.member = homeData.member || state.member;
+        state.activities = homeData.activities || [];
+        state.coupons = homeData.coupons || [];
+        state.couponUseLogs = homeData.couponUseLogs || [];
+        state.walletLogs = homeData.walletLogs || [];
+        state.lastRefreshedAt = Date.now();
+
+        saveMemberCache();
+
+        if (!silent) {
+          renderHomePage();
+        } else if (!state.loading && state.member) {
+          renderHomePage();
+        }
+      } catch (err) {
+        console.warn('refreshMemberData failed', err);
+      } finally {
+        state.refreshing = false;
+      }
+    }
+
+    function formatLastRefreshText() {
+      if (!state.lastRefreshedAt) {
+        return '';
+      }
+
+      const d = new Date(state.lastRefreshedAt);
+      const hh = String(d.getHours()).padStart(2, '0');
+      const mm = String(d.getMinutes()).padStart(2, '0');
+
+      return `${hh}:${mm} 更新`;
+    }
+
     function renderHomePage() {
       const member = state.member;
       const displayName = escapeHtml(member.displayName || '會員');
@@ -1505,7 +1578,16 @@
             </div>
           </div>
 
-          <main class="content" id="content"></main>
+          <main class="content">
+            <div class="refresh-row">
+              <span>${escapeHtml(formatLastRefreshText())}</span>
+              <button type="button" id="refreshMemberBtn">
+                ${state.refreshing ? '更新中...' : '重新整理'}
+              </button>
+            </div>
+
+            <div id="content"></div>
+          </main>
         </div>
       `;
 
@@ -1513,8 +1595,17 @@
         btn.onclick = () => {
           state.tab = btn.dataset.tab;
           renderHomePage();
+          refreshMemberData({ silent: true });
         };
       });
+
+      const refreshBtn = document.getElementById('refreshMemberBtn');
+
+      if (refreshBtn) {
+        refreshBtn.onclick = async () => {
+          await refreshMemberData({ silent: false });
+        };
+      }
 
       const memberCard = document.getElementById('memberCard');
 
@@ -1985,6 +2076,7 @@
             state.coupons = homeData.coupons || [];
             state.couponUseLogs = homeData.couponUseLogs || [];
             state.walletLogs = homeData.walletLogs || [];
+            state.lastRefreshedAt = Date.now();
             saveMemberCache();
             render();
           })
@@ -2003,6 +2095,22 @@
         });
       }
     }
+
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) {
+        refreshMemberData({ silent: true });
+      }
+    });
+
+    window.addEventListener('focus', () => {
+      refreshMemberData({ silent: true });
+    });
+
+    setInterval(() => {
+      if (!document.hidden && state.member && state.idToken) {
+        refreshMemberData({ silent: true });
+      }
+    }, 15000);
 
     boot();
   </script>
