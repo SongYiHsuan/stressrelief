@@ -2193,6 +2193,53 @@
       `;
     }
 
+    function parseRecordTime(value) {
+      const raw = String(value || '').trim();
+
+      if (!raw) {
+        return 0;
+      }
+
+      // 支援：
+      // 2026/7/13 00:59
+      // 2026/07/13 00:59:00
+      // 2026-07-13T00:59:00.000Z
+      // Date 物件
+      const d1 = new Date(raw);
+
+      if (!Number.isNaN(d1.getTime())) {
+        return d1.getTime();
+      }
+
+      const normalized = raw
+        .replace(/-/g, '/')
+        .replace('T', ' ')
+        .replace('.000Z', '')
+        .trim();
+
+      const d2 = new Date(normalized);
+
+      if (!Number.isNaN(d2.getTime())) {
+        return d2.getTime();
+      }
+
+      return 0;
+    }
+
+    function sortRecordsNewestFirst(list, timeKey) {
+      return [...(list || [])].sort((a, b) => {
+        const bt = parseRecordTime(b && b[timeKey]);
+        const at = parseRecordTime(a && a[timeKey]);
+
+        if (bt !== at) {
+          return bt - at;
+        }
+
+        // 時間一樣時，用 id 做第二排序，避免順序跳動
+        return String(b.logId || b.id || '').localeCompare(String(a.logId || a.id || ''));
+      });
+    }
+
     function renderContent() {
       const content = document.getElementById('content');
 
@@ -2227,7 +2274,7 @@
       }
 
       if (state.tab === 'couponHistory') {
-        const logs = state.couponUseLogs || [];
+        const logs = sortRecordsNewestFirst(state.couponUseLogs || [], 'usedAt');
 
         if (!logs.length) {
           content.innerHTML = `
@@ -2265,7 +2312,7 @@
       }
 
       if (state.tab === 'wallet') {
-        const logs = state.walletLogs || [];
+        const logs = sortRecordsNewestFirst(state.walletLogs || [], 'createdAt');
 
         if (!logs.length) {
           content.innerHTML = `
