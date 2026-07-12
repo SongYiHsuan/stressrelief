@@ -1283,7 +1283,19 @@
       }
     }
 
+  
+    /* ===== 強制前台扁平化 Logo ===== */
+    .header-logo {
+      width: 46px !important;
+      height: 46px !important;
+      object-fit: contain !important;
+      display: block !important;
+      flex: 0 0 auto !important;
+    }
+
   </style>
+  <link rel="icon" type="image/svg+xml" href="images/flat-logo-member.svg?v=34">
+  <link rel="apple-touch-icon" href="images/flat-logo-member.svg?v=34">
 </head>
 
 <body>
@@ -1733,7 +1745,7 @@
             <div class="topbar">
               <img
                 class="header-logo"
-                src="images/stresslogo.png"
+                src="images/flat-logo-member.svg?v=34"
                 alt="解憂藥局 The Relief Pharmacy"
               />
               <button class="front-refresh-btn" id="frontRefreshBtn" type="button" aria-label="重新整理" title="重新整理">
