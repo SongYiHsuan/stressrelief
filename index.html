@@ -1293,9 +1293,41 @@
       flex: 0 0 auto !important;
     }
 
+  
+    /* ===== 前台扁平化 Logo 與分頁 Icon ===== */
+    .header-logo {
+      width: 46px !important;
+      height: 46px !important;
+      object-fit: contain !important;
+      display: block !important;
+      flex: 0 0 auto !important;
+      margin: 0 auto !important;
+    }
+
+    .flat-tab-icon {
+      width: 27px !important;
+      height: 27px !important;
+      display: inline-grid !important;
+      place-items: center !important;
+      line-height: 1 !important;
+      color: currentColor !important;
+    }
+
+    .flat-tab-icon svg {
+      width: 27px !important;
+      height: 27px !important;
+      display: block !important;
+      fill: currentColor !important;
+      stroke: none !important;
+    }
+
+    .quick-tabs button {
+      gap: 6px !important;
+    }
+
   </style>
-  <link rel="icon" type="image/svg+xml" href="images/flat-logo-member.svg?v=34">
-  <link rel="apple-touch-icon" href="images/flat-logo-member.svg?v=34">
+  <link rel="icon" type="image/svg+xml" href="images/flat-logo-member.svg?v=36">
+  <link rel="apple-touch-icon" href="images/flat-logo-member.svg?v=36">
 </head>
 
 <body>
@@ -1630,18 +1662,6 @@
       }
     }
 
-    function formatLastRefreshText() {
-      if (!state.lastRefreshedAt) {
-        return '';
-      }
-
-      const d = new Date(state.lastRefreshedAt);
-      const hh = String(d.getHours()).padStart(2, '0');
-      const mm = String(d.getMinutes()).padStart(2, '0');
-
-      return `${hh}:${mm} 更新`;
-    }
-
     function setFrontRefreshButton(isLoading) {
       const btn = document.getElementById('frontRefreshBtn');
 
@@ -1653,31 +1673,6 @@
       btn.classList.toggle('is-loading', isLoading);
       btn.setAttribute('aria-label', isLoading ? '更新中' : '重新整理');
       btn.setAttribute('title', isLoading ? '更新中' : '重新整理');
-    }
-
-      btn.disabled = isLoading;
-      btn.classList.toggle('is-loading', isLoading);
-      btn.setAttribute('aria-label', isLoading ? '更新中' : '重新整理');
-      btn.setAttribute('title', isLoading ? '更新中' : '重新整理');
-    }
-
-    function showFrontRefreshToast(message) {
-      let toast = document.getElementById('frontRefreshToast');
-
-      if (!toast) {
-        toast = document.createElement('div');
-        toast.id = 'frontRefreshToast';
-        toast.className = 'front-refresh-toast';
-        document.body.appendChild(toast);
-      }
-
-      toast.textContent = message;
-      toast.classList.add('show');
-
-      window.clearTimeout(showFrontRefreshToast.timer);
-      showFrontRefreshToast.timer = window.setTimeout(() => {
-        toast.classList.remove('show');
-      }, 1200);
     }
 
     async function refreshFrontHomeData() {
@@ -1743,11 +1738,7 @@
         <div class="app-shell">
           <div class="hero">
             <div class="topbar">
-              <img
-                class="header-logo"
-                src="images/flat-logo-member.svg?v=34"
-                alt="解憂藥局 The Relief Pharmacy"
-              />
+              <img class="header-logo" src="images/flat-logo-member.svg?v=36" alt="解憂藥局會員" />
               <button class="front-refresh-btn" id="frontRefreshBtn" type="button" aria-label="重新整理" title="重新整理">
                 <span class="front-refresh-icon">↻</span>
               </button>
@@ -1782,17 +1773,30 @@
 
             <div class="quick-tabs">
               <button data-tab="coupon" class="${state.tab === 'coupon' ? 'active' : ''}" type="button">
-                <span class="tab-icon">🎁</span>
+                <span class="tab-icon flat-tab-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M4 8.5h16c1.1 0 2 .9 2 2v1.4c0 .6-.4 1-1 1-.9 0-1.6.7-1.6 1.6S20.1 16 21 16c.6 0 1 .4 1 1v1.5c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V17c0-.6.4-1 1-1 .9 0 1.6-.7 1.6-1.5S3.9 12.9 3 12.9c-.6 0-1-.4-1-1v-1.4c0-1.1.9-2 2-2Zm6 2.1v7.8h2v-7.8h-2Z"/>
+                    <path d="M8.4 3.8c.7-.7 1.9-.7 2.6 0l1 1 1-1c.7-.7 1.9-.7 2.6 0s.7 1.9 0 2.6L12 10 8.4 6.4c-.7-.7-.7-1.9 0-2.6Z"/>
+                  </svg>
+                </span>
                 優惠券
               </button>
 
               <button data-tab="couponHistory" class="${state.tab === 'couponHistory' ? 'active' : ''}" type="button">
-                <span class="tab-icon">✓</span>
+                <span class="tab-icon flat-tab-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M5 2.5h14c1.1 0 2 .9 2 2v17c0 .8-.9 1.3-1.6.9L17.2 21l-2.2 1.4c-.3.2-.7.2-1.1 0L12 21l-1.9 1.4c-.4.2-.8.2-1.1 0L6.8 21l-2.2 1.4c-.7.4-1.6-.1-1.6-.9v-17c0-1.1.9-2 2-2Zm3.2 5.1c-.6 0-1 .4-1 1s.4 1 1 1h7.6c.6 0 1-.4 1-1s-.4-1-1-1H8.2Zm0 4.1c-.6 0-1 .4-1 1s.4 1 1 1h7.6c.6 0 1-.4 1-1s-.4-1-1-1H8.2Zm0 4.1c-.6 0-1 .4-1 1s.4 1 1 1H13c.6 0 1-.4 1-1s-.4-1-1-1H8.2Z"/>
+                  </svg>
+                </span>
                 使用紀錄
               </button>
 
               <button data-tab="wallet" class="${state.tab === 'wallet' ? 'active' : ''}" type="button">
-                <span class="tab-icon">💰</span>
+                <span class="tab-icon flat-tab-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M4 5.5h13.5c1.1 0 2 .9 2 2v1H20c1.1 0 2 .9 2 2v6c0 1.1-.9 2-2 2h-.5v1c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2v-12c0-1.1.9-2 2-2Zm0 2v12h13.5v-1H13c-1.1 0-2-.9-2-2v-6c0-1.1.9-2 2-2h4.5v-1H4Zm9 3v6h7v-6h-7Zm4.5 4.2c-.8 0-1.4-.6-1.4-1.4s.6-1.4 1.4-1.4 1.4.6 1.4 1.4-.6 1.4-1.4 1.4Z"/>
+                  </svg>
+                </span>
                 儲值紀錄
               </button>
             </div>
