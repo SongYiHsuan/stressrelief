@@ -2249,8 +2249,17 @@
         return;
       }
 
-      const btn = document.querySelector(`[data-claim-coupon="${memberCouponId}"]`);
-      const oldText = btn ? btn.textContent : '';
+      const couponIndex = (state.coupons || []).findIndex((coupon) => {
+        return getCouponIdentity(coupon) === String(memberCouponId);
+      });
+
+      const originalCoupons = (state.coupons || []).map((coupon) => ({
+        ...coupon,
+      }));
+
+      const btn = document.querySelector(
+        `[data-claim-coupon="${memberCouponId}"]`
+      );
 
       try {
         state.couponActionLoading = true;
@@ -2258,11 +2267,31 @@
         if (btn) {
           btn.disabled = true;
           btn.classList.add('is-loading');
-          btn.textContent = '更新中...';
+          btn.textContent = '領取中...';
         }
 
         setFrontActionLoading('優惠券領取中...');
 
+        // 讓使用者看得到短暫的處理狀態
+        await waitMs(350);
+
+        // 先更新前台畫面：未領取 → 已領取
+        if (couponIndex >= 0) {
+          state.coupons[couponIndex] = {
+            ...state.coupons[couponIndex],
+            status: 'available',
+            claimedAt: new Date().toISOString(),
+            optimisticUpdatedAt: Date.now(),
+          };
+
+          state.coupons = sortCouponsForDisplay(state.coupons);
+        }
+
+        state.tab = 'coupon';
+        saveMemberCache();
+        renderHomePage();
+
+        // 後端在畫面更新後繼續執行
         const idToken = await ensureFrontLineIdToken();
 
         await post('claimMemberCoupon', {
@@ -2270,18 +2299,21 @@
           memberCouponId,
         });
 
-        // 領取完成後重新抓最新資料，並停留在優惠券頁
-        await reloadHomeDataAndRender('coupon', 'claim coupon');
+        // 背景重新讀取正式資料，不阻塞目前畫面
+        reconcileHomeDataInBackground({
+          preferredTab: 'coupon',
+          attempts: 4,
+        });
       } catch (err) {
+        console.error('claimCoupon failed', err);
+
+        // 後端失敗才還原
+        state.coupons = originalCoupons;
+        state.tab = 'coupon';
+        saveMemberCache();
+        renderHomePage();
+
         alert(err.message || String(err));
-
-        if (btn) {
-          btn.disabled = false;
-          btn.classList.remove('is-loading');
-          btn.textContent = oldText || '領取優惠券';
-        }
-
-        renderContent();
       } finally {
         state.couponActionLoading = false;
       }
@@ -2293,14 +2325,29 @@
         return;
       }
 
-      const btn = document.querySelector(`[data-use-coupon="${memberCouponId}"]`);
-      const oldText = btn ? btn.textContent : '';
+      const coupon = (state.coupons || []).find((item) => {
+        return getCouponIdentity(item) === String(memberCouponId);
+      });
 
-      const ok = confirm('確定要使用這張優惠券嗎？使用後會移到使用紀錄。');
+      const originalCoupons = (state.coupons || []).map((item) => ({
+        ...item,
+      }));
+
+      const originalUseLogs = (state.couponUseLogs || []).map((item) => ({
+        ...item,
+      }));
+
+      const ok = confirm(
+        '確定要使用這張優惠券嗎？使用後會移到使用紀錄。'
+      );
 
       if (!ok) {
         return;
       }
+
+      const btn = document.querySelector(
+        `[data-use-coupon="${memberCouponId}"]`
+      );
 
       try {
         state.couponActionLoading = true;
@@ -2308,11 +2355,36 @@
         if (btn) {
           btn.disabled = true;
           btn.classList.add('is-loading');
-          btn.textContent = '更新中...';
+          btn.textContent = '使用中...';
         }
 
         setFrontActionLoading('優惠券使用中...');
 
+        await waitMs(350);
+
+        // 先從可用優惠券移除
+        state.coupons = (state.coupons || []).filter((item) => {
+          return getCouponIdentity(item) !== String(memberCouponId);
+        });
+
+        // 先新增一筆前台使用紀錄，排在最上面
+        if (coupon) {
+          const optimisticLog = createOptimisticCouponUseLog(coupon);
+
+          state.couponUseLogs = [
+            optimisticLog,
+            ...(state.couponUseLogs || []).filter((log) => {
+              return String(log.memberCouponId || '') !==
+                String(memberCouponId);
+            }),
+          ];
+        }
+
+        state.tab = 'couponHistory';
+        saveMemberCache();
+        renderHomePage();
+
+        // 後端在畫面切換後繼續處理
         const idToken = await ensureFrontLineIdToken();
 
         await post('useOwnMemberCoupon', {
@@ -2320,18 +2392,22 @@
           memberCouponId,
         });
 
-        // 使用完成後重新抓最新資料，並切到使用紀錄頁
-        await reloadHomeDataAndRender('couponHistory', 'use coupon');
+        // 背景校正正式使用紀錄
+        reconcileHomeDataInBackground({
+          preferredTab: 'couponHistory',
+          attempts: 4,
+        });
       } catch (err) {
+        console.error('useCoupon failed', err);
+
+        // 失敗才還原優惠券與使用紀錄
+        state.coupons = originalCoupons;
+        state.couponUseLogs = originalUseLogs;
+        state.tab = 'coupon';
+        saveMemberCache();
+        renderHomePage();
+
         alert(err.message || String(err));
-
-        if (btn) {
-          btn.disabled = false;
-          btn.classList.remove('is-loading');
-          btn.textContent = oldText || '使用該券';
-        }
-
-        renderContent();
       } finally {
         state.couponActionLoading = false;
       }
@@ -2447,8 +2523,19 @@
       const content = document.getElementById('content');
 
       if (state.tab === 'coupon') {
-        const unclaimed = (state.coupons || []).filter((c) => String(c.status) === 'unclaimed');
-        const claimed = (state.coupons || []).filter((c) => String(c.status) === 'available');
+        const sortedCoupons = sortCouponsForDisplay(
+          state.coupons || []
+        );
+
+        const claimed = sortedCoupons.filter((c) => {
+          const status = String(c.status || '');
+
+          return status === 'available' || status === 'claimed';
+        });
+
+        const unclaimed = sortedCoupons.filter((c) => {
+          return String(c.status || '') === 'unclaimed';
+        });
 
         if (!unclaimed.length && !claimed.length) {
           content.innerHTML = `
@@ -2462,14 +2549,14 @@
 
         content.innerHTML = `
           <div class="list">
-            ${unclaimed.length ? `
-              <div class="coupon-section-title">未領取</div>
-              ${unclaimed.map(renderCouponCard).join('')}
-            ` : ''}
-
             ${claimed.length ? `
               <div class="coupon-section-title">已領取</div>
               ${claimed.map(renderCouponCard).join('')}
+            ` : ''}
+
+            ${unclaimed.length ? `
+              <div class="coupon-section-title">未領取</div>
+              ${unclaimed.map(renderCouponCard).join('')}
             ` : ''}
           </div>
         `;
