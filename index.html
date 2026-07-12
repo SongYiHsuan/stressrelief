@@ -1859,7 +1859,9 @@
         if (!state.loading && state.member && document.getElementById('content')) {
           syncTabButtons();
           renderContent();
-          updateFrontDataDebug && updateFrontDataDebug('auto refresh');
+          if (typeof updateFrontDataDebug === 'function') {
+            updateFrontDataDebug('auto refresh');
+          }
         }
       } catch (err) {
         console.warn('refreshMemberData failed', err);
@@ -1942,7 +1944,9 @@
           renderHomePage();
           syncTabButtons();
           renderContent();
-          updateFrontDataDebug && updateFrontDataDebug('manual refresh');
+          if (typeof updateFrontDataDebug === 'function') {
+            updateFrontDataDebug('manual refresh');
+          }
           setFrontRefreshButton(false);
         }, wait);
       } catch (err) {
@@ -1957,6 +1961,89 @@
           setFrontRefreshButton(false);
         }, wait);
       }
+    }
+
+    function syncTabButtons() {
+      document.querySelectorAll('[data-tab]').forEach((btn) => {
+        btn.classList.toggle(
+          'active',
+          btn.dataset.tab === state.tab
+        );
+      });
+    }
+
+    function setFrontTab(tab) {
+      const allowedTabs = [
+        'coupon',
+        'couponHistory',
+        'wallet'
+      ];
+
+      state.tab = allowedTabs.includes(tab)
+        ? tab
+        : 'coupon';
+
+      syncTabButtons();
+      renderContent();
+    }
+
+    function setFrontActionLoading(message) {
+      const content = document.getElementById('content');
+
+      if (!content) {
+        return;
+      }
+
+      content.innerHTML = `
+        <div class="front-action-loading">
+          <div class="front-action-spinner"></div>
+          <div>${escapeHtml(message || '更新中...')}</div>
+        </div>
+      `;
+    }
+
+    function applyHomeDataToState(homeData) {
+      if (!homeData) {
+        return;
+      }
+
+      state.member = homeData.member || state.member;
+
+      if (Array.isArray(homeData.activities)) {
+        state.activities = homeData.activities;
+      }
+
+      if (Array.isArray(homeData.coupons)) {
+        state.coupons = homeData.coupons;
+      }
+
+      if (Array.isArray(homeData.couponUseLogs)) {
+        state.couponUseLogs = homeData.couponUseLogs;
+      }
+
+      if (Array.isArray(homeData.walletLogs)) {
+        state.walletLogs = homeData.walletLogs;
+      }
+
+      state.lastRefreshedAt = Date.now();
+
+      saveMemberCache();
+    }
+
+    async function reloadHomeDataAndRender(targetTab) {
+      const idToken = await ensureFrontLineIdToken();
+
+      const homeData = await post('getHomeData', {
+        idToken,
+      });
+
+      applyHomeDataToState(homeData);
+
+      if (targetTab) {
+        state.tab = targetTab;
+      }
+
+      renderHomePage();
     }
 
     function renderHomePage() {
@@ -2111,6 +2198,7 @@
         }
       }
 
+      syncTabButtons();
       renderContent();
     }
 
