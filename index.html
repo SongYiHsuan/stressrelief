@@ -1785,8 +1785,7 @@
         return;
       }
 
-      const silent = options.silent !== false;
-      const currentTab = state.tab;
+      const currentTab = state.tab || 'coupon';
 
       try {
         state.refreshing = true;
@@ -1797,21 +1796,31 @@
 
         state.member = homeData.member || state.member;
         state.activities = homeData.activities || [];
-        state.coupons = homeData.coupons || [];
-        state.couponUseLogs = homeData.couponUseLogs || [];
-        state.walletLogs = homeData.walletLogs || [];
+
+        if (Array.isArray(homeData.coupons)) {
+          state.coupons = homeData.coupons;
+        }
+
+        if (Array.isArray(homeData.couponUseLogs)) {
+          state.couponUseLogs = homeData.couponUseLogs;
+        }
+
+        if (Array.isArray(homeData.walletLogs)) {
+          state.walletLogs = homeData.walletLogs;
+        }
+
         state.lastRefreshedAt = Date.now();
 
-        // 自動更新時保持目前分頁
+        // 自動更新後一定維持原本所在分頁
         state.tab = currentTab;
 
         saveMemberCache();
 
-        if (!silent) {
-          renderHomePage();
-        } else if (!state.loading && state.member) {
-          // 只刷新目前分頁內容，避免整個頁面重畫造成跳動
+        // 重點：自動更新只刷新目前分頁內容，不重畫 header / tabs
+        if (!state.loading && state.member && document.getElementById('content')) {
+          syncTabButtons();
           renderContent();
+          updateFrontDataDebug && updateFrontDataDebug('auto refresh');
         }
       } catch (err) {
         console.warn('refreshMemberData failed', err);
@@ -1849,7 +1858,7 @@
         return;
       }
 
-      const currentTab = state.tab;
+      const currentTab = state.tab || 'coupon';
 
       state.forceRefreshing = true;
       state.refreshing = true;
@@ -1864,12 +1873,22 @@
 
         state.member = homeData.member || state.member;
         state.activities = homeData.activities || [];
-        state.coupons = homeData.coupons || [];
-        state.couponUseLogs = homeData.couponUseLogs || [];
-        state.walletLogs = homeData.walletLogs || [];
+
+        if (Array.isArray(homeData.coupons)) {
+          state.coupons = homeData.coupons;
+        }
+
+        if (Array.isArray(homeData.couponUseLogs)) {
+          state.couponUseLogs = homeData.couponUseLogs;
+        }
+
+        if (Array.isArray(homeData.walletLogs)) {
+          state.walletLogs = homeData.walletLogs;
+        }
+
         state.lastRefreshedAt = Date.now();
 
-        // 手動強制更新後保持目前分頁
+        // 手動更新後也一定維持原分頁
         state.tab = currentTab;
 
         saveMemberCache();
@@ -1878,9 +1897,13 @@
         const wait = Math.max(0, 650 - elapsed);
 
         window.setTimeout(() => {
+          state.tab = currentTab;
           state.forceRefreshing = false;
           state.refreshing = false;
           renderHomePage();
+          syncTabButtons();
+          renderContent();
+          updateFrontDataDebug && updateFrontDataDebug('manual refresh');
           setFrontRefreshButton(false);
         }, wait);
       } catch (err) {
@@ -1994,8 +2017,7 @@
 
       document.querySelectorAll('[data-tab]').forEach((btn) => {
         btn.onclick = () => {
-          state.tab = btn.dataset.tab;
-          renderHomePage();
+          setFrontTab(btn.dataset.tab);
 
           // 切換分頁後，背景自動更新目前分頁內容
           refreshMemberData({ silent: true });
@@ -2124,6 +2146,8 @@
 
         state.tab = 'couponHistory';
         renderHomePage();
+        syncTabButtons();
+        renderContent();
       } catch (err) {
         alert(err.message || String(err));
 
