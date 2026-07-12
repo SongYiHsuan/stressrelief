@@ -1342,6 +1342,91 @@
       justify-content: center !important;
     }
 
+  
+    /* ===== 前台儲值紀錄卡片精簡版 ===== */
+
+    .wallet-record-card {
+      padding: 15px 16px !important;
+      border-radius: 16px !important;
+      display: grid !important;
+      gap: 9px !important;
+    }
+
+    .wallet-record-main {
+      display: flex !important;
+      align-items: center !important;
+      justify-content: space-between !important;
+      gap: 12px !important;
+    }
+
+    .wallet-record-type {
+      font-size: 17px !important;
+      font-weight: 950 !important;
+      color: #263b43 !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      gap: 8px !important;
+      min-width: 0 !important;
+    }
+
+    .wallet-record-dot {
+      width: 9px !important;
+      height: 9px !important;
+      border-radius: 999px !important;
+      background: #06b84f !important;
+      flex: 0 0 auto !important;
+    }
+
+    .wallet-record-dot.negative {
+      background: #c0392b !important;
+    }
+
+    .wallet-record-amount {
+      font-size: 22px !important;
+      font-weight: 950 !important;
+      color: #06b84f !important;
+      white-space: nowrap !important;
+    }
+
+    .wallet-record-amount.negative {
+      color: #c0392b !important;
+    }
+
+    .wallet-record-sub {
+      display: flex !important;
+      flex-wrap: wrap !important;
+      align-items: center !important;
+      gap: 6px !important;
+      color: #7a8589 !important;
+      font-size: 13px !important;
+      line-height: 1.35 !important;
+      font-weight: 750 !important;
+    }
+
+    .wallet-record-method {
+      background: #f3f5f6 !important;
+      color: #4b5960 !important;
+      border-radius: 999px !important;
+      padding: 4px 8px !important;
+      font-size: 12px !important;
+      font-weight: 900 !important;
+    }
+
+    .wallet-record-note {
+      color: #5f6b70 !important;
+      background: #fafafa !important;
+      border-radius: 12px !important;
+      padding: 9px 10px !important;
+      font-size: 13px !important;
+      line-height: 1.45 !important;
+      font-weight: 750 !important;
+      word-break: break-word !important;
+    }
+
+    .wallet-record-note.is-empty {
+      color: #a0a7aa !important;
+    }
+
   </style>
   <link rel="icon" type="image/svg+xml" href="images/flat-logo-member.svg?v=36">
   <link rel="apple-touch-icon" href="images/flat-logo-member.svg?v=36">
@@ -2115,15 +2200,32 @@
             ${logs.map((log) => {
               const amount = Number(log.amount || 0);
 
+              const timeText = formatSimpleDateTime(log.createdAt) || '未記錄時間';
+              const methodText = log.payMethod || '未設定';
+              const noteText = log.note || '無備註';
+
               return `
-                <div class="record-card">
-                  <div class="record-title">${escapeHtml(log.type || '儲值紀錄')}</div>
-                  <div class="record-amount ${amount < 0 ? 'negative' : ''}">
-                    ${amount >= 0 ? '+' : ''}${escapeHtml(amount)}
+                <div class="record-card wallet-record-card">
+                  <div class="wallet-record-main">
+                    <div class="wallet-record-type">
+                      <span class="wallet-record-dot ${amount < 0 ? 'negative' : ''}"></span>
+                      <span>${escapeHtml(log.type || '儲值紀錄')}</span>
+                    </div>
+
+                    <div class="wallet-record-amount ${amount < 0 ? 'negative' : ''}">
+                      ${amount >= 0 ? '+' : '-'}$${escapeHtml(Math.abs(amount))}
+                    </div>
                   </div>
-                  <div class="record-meta">時間：${escapeHtml(formatSimpleDateTime(log.createdAt) || '')}</div>
-                  <div class="record-meta">方式：${escapeHtml(log.payMethod || '未設定')}</div>
-                  <div class="record-meta">備註：${escapeHtml(log.note || '')}</div>
+
+                  <div class="wallet-record-sub">
+                    <span>${escapeHtml(timeText)}</span>
+                    <span>｜</span>
+                    <span class="wallet-record-method">${escapeHtml(methodText)}</span>
+                  </div>
+
+                  <div class="wallet-record-note ${log.note ? '' : 'is-empty'}">
+                    備註：${escapeHtml(noteText)}
+                  </div>
                 </div>
               `;
             }).join('')}
