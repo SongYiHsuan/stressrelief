@@ -1495,6 +1495,7 @@
       couponUseLogs: [],
       walletLogs: [],
       refreshing: false,
+      forceRefreshing: false,
       lastRefreshedAt: 0,
       tab: new URLSearchParams(window.location.search).get('tab') || 'coupon',
       view: 'home',
@@ -1730,11 +1731,16 @@
 
 
     async function refreshMemberData(options = {}) {
-      if (!state.idToken || state.refreshing) {
+      if (!state.idToken || state.forceRefreshing) {
+        return;
+      }
+
+      if (state.refreshing) {
         return;
       }
 
       const silent = options.silent !== false;
+      const currentTab = state.tab;
 
       try {
         state.refreshing = true;
@@ -1750,12 +1756,16 @@
         state.walletLogs = homeData.walletLogs || [];
         state.lastRefreshedAt = Date.now();
 
+        // 自動更新時保持目前分頁
+        state.tab = currentTab;
+
         saveMemberCache();
 
         if (!silent) {
           renderHomePage();
         } else if (!state.loading && state.member) {
-          renderHomePage();
+          // 只刷新目前分頁內容，避免整個頁面重畫造成跳動
+          renderContent();
         }
       } catch (err) {
         console.warn('refreshMemberData failed', err);
@@ -1778,10 +1788,13 @@
     }
 
     async function refreshFrontHomeData() {
-      if (!state.idToken || state.refreshing) {
+      if (!state.idToken || state.forceRefreshing) {
         return;
       }
 
+      const currentTab = state.tab;
+
+      state.forceRefreshing = true;
       state.refreshing = true;
       setFrontRefreshButton(true);
 
@@ -1799,23 +1812,28 @@
         state.walletLogs = homeData.walletLogs || [];
         state.lastRefreshedAt = Date.now();
 
+        // 手動強制更新後保持目前分頁
+        state.tab = currentTab;
+
         saveMemberCache();
 
         const elapsed = Date.now() - startedAt;
-        const wait = Math.max(0, 800 - elapsed);
+        const wait = Math.max(0, 650 - elapsed);
 
         window.setTimeout(() => {
-          renderHomePage();
+          state.forceRefreshing = false;
           state.refreshing = false;
+          renderHomePage();
           setFrontRefreshButton(false);
         }, wait);
       } catch (err) {
         console.error('refreshFrontHomeData failed', err);
 
         const elapsed = Date.now() - startedAt;
-        const wait = Math.max(0, 800 - elapsed);
+        const wait = Math.max(0, 650 - elapsed);
 
         window.setTimeout(() => {
+          state.forceRefreshing = false;
           state.refreshing = false;
           setFrontRefreshButton(false);
         }, wait);
@@ -1842,7 +1860,7 @@
             <div class="topbar">
               <img
                 class="header-logo"
-                src="images/stresslogo.png?v=37"
+                src="images/stresslogo.png?v=40"
                 alt="解憂藥局 The Relief Pharmacy"
               />
               <button class="front-refresh-btn" id="frontRefreshBtn" type="button" aria-label="重新整理" title="重新整理">
@@ -1916,6 +1934,8 @@
         btn.onclick = () => {
           state.tab = btn.dataset.tab;
           renderHomePage();
+
+          // 切換分頁後，背景自動更新目前分頁內容
           refreshMemberData({ silent: true });
         };
       });
