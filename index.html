@@ -1473,6 +1473,44 @@
       }
     }
 
+  
+    /* ===== 優惠券操作更新中 ===== */
+    .front-action-loading {
+      margin: 20px 0 0;
+      padding: 34px 20px;
+      border-radius: 18px;
+      background: #ffffff;
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.08);
+      text-align: center;
+      color: #263b43;
+      font-weight: 900;
+    }
+
+    .front-action-spinner {
+      width: 34px;
+      height: 34px;
+      margin: 0 auto 14px;
+      border-radius: 999px;
+      border: 4px solid #e8ecef;
+      border-top-color: #111111;
+      animation: frontActionSpin 0.75s linear infinite;
+    }
+
+    @keyframes frontActionSpin {
+      from {
+        transform: rotate(0deg);
+      }
+
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .coupon-action-btn.is-loading {
+      opacity: 0.72;
+      pointer-events: none;
+    }
+
   </style>
   <link rel="icon" type="image/svg+xml" href="images/flat-logo-member.svg?v=36">
   <link rel="apple-touch-icon" href="images/flat-logo-member.svg?v=36">
@@ -1542,6 +1580,7 @@
       walletLogs: [],
       refreshing: false,
       forceRefreshing: false,
+      couponActionLoading: false,
       lastRefreshedAt: 0,
       tab: new URLSearchParams(window.location.search).get('tab') || 'coupon',
       view: 'home',
@@ -2077,44 +2116,52 @@
 
 
     async function claimCoupon(memberCouponId) {
+      if (state.couponActionLoading) {
+        return;
+      }
+
       const btn = document.querySelector(`[data-claim-coupon="${memberCouponId}"]`);
       const oldText = btn ? btn.textContent : '';
 
       try {
+        state.couponActionLoading = true;
+
         if (btn) {
           btn.disabled = true;
-          btn.textContent = '領取中...';
+          btn.classList.add('is-loading');
+          btn.textContent = '更新中...';
         }
+
+        setFrontActionLoading('優惠券領取中...');
 
         await post('claimMemberCoupon', {
           idToken: state.idToken,
           memberCouponId,
         });
 
-        const homeData = await post('getHomeData', {
-          idToken: state.idToken,
-        });
-
-        state.member = homeData.member || state.member;
-        state.coupons = homeData.coupons || [];
-        state.couponUseLogs = homeData.couponUseLogs || [];
-        state.walletLogs = homeData.walletLogs || [];
-        state.lastRefreshedAt = Date.now();
-
-        saveMemberCache();
-        renderHomePage();
+        // 領取完成後重新抓最新資料，並停留在優惠券頁
+        await reloadHomeDataAndRender('coupon', 'claim coupon');
       } catch (err) {
         alert(err.message || String(err));
 
         if (btn) {
           btn.disabled = false;
-          btn.textContent = oldText;
+          btn.classList.remove('is-loading');
+          btn.textContent = oldText || '領取優惠券';
         }
+
+        renderContent();
+      } finally {
+        state.couponActionLoading = false;
       }
     }
 
 
     async function useCoupon(memberCouponId) {
+      if (state.couponActionLoading) {
+        return;
+      }
+
       const btn = document.querySelector(`[data-use-coupon="${memberCouponId}"]`);
       const oldText = btn ? btn.textContent : '';
 
@@ -2125,36 +2172,35 @@
       }
 
       try {
+        state.couponActionLoading = true;
+
         if (btn) {
           btn.disabled = true;
-          btn.textContent = '使用中...';
+          btn.classList.add('is-loading');
+          btn.textContent = '更新中...';
         }
+
+        setFrontActionLoading('優惠券使用中...');
 
         await post('useOwnMemberCoupon', {
           idToken: state.idToken,
           memberCouponId,
         });
 
-        const homeData = await post('getHomeData', {
-          idToken: state.idToken,
-        });
-
-        state.member = homeData.member || state.member;
-        state.coupons = homeData.coupons || [];
-        state.couponUseLogs = homeData.couponUseLogs || [];
-        state.walletLogs = homeData.walletLogs || [];
-
-        state.tab = 'couponHistory';
-        renderHomePage();
-        syncTabButtons();
-        renderContent();
+        // 使用完成後重新抓最新資料，並切到使用紀錄頁
+        await reloadHomeDataAndRender('couponHistory', 'use coupon');
       } catch (err) {
         alert(err.message || String(err));
 
         if (btn) {
           btn.disabled = false;
-          btn.textContent = oldText;
+          btn.classList.remove('is-loading');
+          btn.textContent = oldText || '使用該券';
         }
+
+        renderContent();
+      } finally {
+        state.couponActionLoading = false;
       }
     }
 
