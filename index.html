@@ -1581,6 +1581,8 @@
       refreshing: false,
       forceRefreshing: false,
       couponActionLoading: false,
+      couponPendingTasks: {},
+      optimisticCouponIds: {}, 
       lastRefreshedAt: 0,
       tab: new URLSearchParams(window.location.search).get('tab') || 'coupon',
       view: 'home',
@@ -1816,7 +1818,12 @@
 
 
     async function refreshMemberData(options = {}) {
-      if (!state.idToken || state.forceRefreshing) {
+      if (
+        !state.idToken ||
+        state.forceRefreshing ||
+        state.couponActionLoading ||
+        Object.keys(state.couponPendingTasks || {}).length > 0
+      ) {
         return;
       }
 
@@ -2291,21 +2298,38 @@
         saveMemberCache();
         renderHomePage();
 
-        // 後端在畫面更新後繼續執行
-        const idToken = await ensureFrontLineIdToken();
+        // 標記這張券正在背景領取
+        state.optimisticCouponIds[String(memberCouponId)] = 'claiming';
 
-        await post('claimMemberCoupon', {
-          idToken,
-          memberCouponId,
-        });
+        const claimTask = (async () => {
+          const idToken = await ensureFrontLineIdToken();
 
-        // 背景重新讀取正式資料，不阻塞目前畫面
+          await post('claimMemberCoupon', {
+            idToken,
+            memberCouponId,
+          });
+
+          state.optimisticCouponIds[String(memberCouponId)] = 'claimed';
+
+          return true;
+        })();
+
+        state.couponPendingTasks[String(memberCouponId)] = claimTask;
+
+        // 等待背景任務，但不影響已經更新完成的畫面
+        await claimTask;
+
+        delete state.couponPendingTasks[String(memberCouponId)];
+
         reconcileHomeDataInBackground({
-          preferredTab: 'coupon',
+          preferredTab: state.tab,
           attempts: 4,
         });
       } catch (err) {
         console.error('claimCoupon failed', err);
+
+        delete state.couponPendingTasks[String(memberCouponId)];
+        delete state.optimisticCouponIds[String(memberCouponId)];
 
         // 後端失敗才還原
         state.coupons = originalCoupons;
@@ -2384,21 +2408,45 @@
         saveMemberCache();
         renderHomePage();
 
-        // 後端在畫面切換後繼續處理
-        const idToken = await ensureFrontLineIdToken();
+        const couponKey = String(memberCouponId);
+        state.optimisticCouponIds[couponKey] = 'using';
 
-        await post('useOwnMemberCoupon', {
-          idToken,
-          memberCouponId,
-        });
+        const useTask = (async () => {
+          // 若這張券剛剛才領取，先等待領取後端完成
+          const pendingClaim = state.couponPendingTasks[couponKey];
 
-        // 背景校正正式使用紀錄
+          if (pendingClaim) {
+            await pendingClaim;
+          }
+
+          const idToken = await ensureFrontLineIdToken();
+
+          await post('useOwnMemberCoupon', {
+            idToken,
+            memberCouponId,
+          });
+
+          state.optimisticCouponIds[couponKey] = 'used';
+
+          return true;
+        })();
+
+        state.couponPendingTasks[couponKey] = useTask;
+
+        // 畫面已在使用紀錄，這裡讓後端繼續完成
+        await useTask;
+
+        delete state.couponPendingTasks[couponKey];
+
         reconcileHomeDataInBackground({
           preferredTab: 'couponHistory',
           attempts: 4,
         });
       } catch (err) {
         console.error('useCoupon failed', err);
+
+        delete state.couponPendingTasks[String(memberCouponId)];
+        delete state.optimisticCouponIds[String(memberCouponId)];
 
         // 失敗才還原優惠券與使用紀錄
         state.coupons = originalCoupons;
