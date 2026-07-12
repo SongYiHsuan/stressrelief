@@ -2251,6 +2251,193 @@
       return idToken;
     }
 
+
+    // ===== 優惠券顯示與樂觀更新修正 =====
+
+    function waitMs(ms) {
+      return new Promise((resolve) => {
+        window.setTimeout(resolve, Number(ms) || 0);
+      });
+    }
+
+    function getCouponIdentity(coupon) {
+      if (!coupon || typeof coupon !== 'object') {
+        return '';
+      }
+
+      return String(
+        coupon.memberCouponId ??
+        coupon.id ??
+        coupon.couponId ??
+        coupon.code ??
+        coupon.ticketId ??
+        ''
+      ).trim();
+    }
+
+    function getCouponStatus(coupon) {
+      const rawStatus = String(
+        coupon?.status ??
+        coupon?.couponStatus ??
+        ''
+      ).trim().toLowerCase();
+
+      if (
+        coupon?.used === true ||
+        coupon?.isUsed === true ||
+        rawStatus === 'used' ||
+        rawStatus === 'redeemed'
+      ) {
+        return 'used';
+      }
+
+      if (
+        coupon?.claimed === true ||
+        coupon?.isClaimed === true ||
+        rawStatus === 'available' ||
+        rawStatus === 'claimed' ||
+        rawStatus === 'unused'
+      ) {
+        return 'available';
+      }
+
+      return 'unclaimed';
+    }
+
+    function getCouponSortTime(coupon) {
+      const values = [
+        coupon?.optimisticUpdatedAt,
+        coupon?.claimedAt,
+        coupon?.createdAt,
+        coupon?.updatedAt,
+        coupon?.startAt,
+        coupon?.startDate
+      ];
+
+      for (const value of values) {
+        if (!value) {
+          continue;
+        }
+
+        if (typeof value === 'number' && Number.isFinite(value)) {
+          return value;
+        }
+
+        const timestamp = new Date(value).getTime();
+
+        if (!Number.isNaN(timestamp)) {
+          return timestamp;
+        }
+      }
+
+      return 0;
+    }
+
+    function sortCouponsForDisplay(coupons) {
+      const statusOrder = {
+        available: 0,
+        claimed: 0,
+        unused: 0,
+        unclaimed: 1,
+        used: 2,
+        redeemed: 2
+      };
+
+      return [...(Array.isArray(coupons) ? coupons : [])].sort((a, b) => {
+        const aStatus = getCouponStatus(a);
+        const bStatus = getCouponStatus(b);
+
+        const aOrder = statusOrder[aStatus] ?? 1;
+        const bOrder = statusOrder[bStatus] ?? 1;
+
+        if (aOrder !== bOrder) {
+          return aOrder - bOrder;
+        }
+
+        return getCouponSortTime(b) - getCouponSortTime(a);
+      });
+    }
+
+    function createOptimisticCouponUseLog(coupon) {
+      const memberCouponId = getCouponIdentity(coupon);
+      const now = new Date().toISOString();
+
+      return {
+        id: 'optimistic-' + memberCouponId + '-' + Date.now(),
+        memberCouponId,
+        couponId: coupon?.couponId ?? coupon?.id ?? '',
+        title:
+          coupon?.title ??
+          coupon?.couponTitle ??
+          coupon?.name ??
+          '優惠券',
+        description:
+          coupon?.description ??
+          coupon?.content ??
+          '',
+        imageUrl:
+          coupon?.imageUrl ??
+          coupon?.image ??
+          '',
+        amount:
+          coupon?.amount ??
+          coupon?.discountAmount ??
+          coupon?.value ??
+          '',
+        usedAt: now,
+        createdAt: now,
+        status: 'used',
+        optimistic: true
+      };
+    }
+
+    async function reconcileHomeDataInBackground(targetTab, options = {}) {
+      const retryCount = Number(options.retryCount ?? 3);
+      const retryDelay = Number(options.retryDelay ?? 900);
+
+      let lastError = null;
+
+      for (let attempt = 0; attempt < retryCount; attempt += 1) {
+        try {
+          const idToken = await ensureFrontLineIdToken();
+
+          const homeData = await post('getHomeData', {
+            idToken
+          });
+
+          applyHomeDataToState(homeData);
+
+          if (targetTab) {
+            state.tab = targetTab;
+          }
+
+          if (
+            !state.loading &&
+            state.member &&
+            document.getElementById('content')
+          ) {
+            syncTabButtons();
+            renderContent();
+          }
+
+          return homeData;
+        } catch (err) {
+          lastError = err;
+          console.warn(
+            'reconcileHomeDataInBackground failed',
+            attempt + 1,
+            err
+          );
+
+          if (attempt < retryCount - 1) {
+            await waitMs(retryDelay * (attempt + 1));
+          }
+        }
+      }
+
+      throw lastError || new Error('優惠券資料同步失敗');
+    }
+
     async function claimCoupon(memberCouponId) {
       if (state.couponActionLoading) {
         return;
