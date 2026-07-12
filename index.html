@@ -1325,6 +1325,23 @@
       gap: 6px !important;
     }
 
+  
+    /* ===== 前台上方 Logo 改回 stresslogo 橫式 ===== */
+    .topbar .header-logo {
+      width: min(64vw, 245px) !important;
+      max-width: 245px !important;
+      height: auto !important;
+      max-height: 44px !important;
+      object-fit: contain !important;
+      display: block !important;
+      margin: 0 auto !important;
+      flex: 0 1 auto !important;
+    }
+
+    .topbar {
+      justify-content: center !important;
+    }
+
   </style>
   <link rel="icon" type="image/svg+xml" href="images/flat-logo-member.svg?v=36">
   <link rel="apple-touch-icon" href="images/flat-logo-member.svg?v=36">
@@ -1738,7 +1755,11 @@
         <div class="app-shell">
           <div class="hero">
             <div class="topbar">
-              <img class="header-logo" src="images/flat-logo-member.svg?v=36" alt="解憂藥局會員" />
+              <img
+                class="header-logo"
+                src="images/stresslogo.png?v=37"
+                alt="解憂藥局 The Relief Pharmacy"
+              />
               <button class="front-refresh-btn" id="frontRefreshBtn" type="button" aria-label="重新整理" title="重新整理">
                 <span class="front-refresh-icon">↻</span>
               </button>
