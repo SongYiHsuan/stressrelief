@@ -2115,6 +2115,47 @@
     }
 
 
+    async function ensureFrontLineIdToken() {
+      if (state.idToken) {
+        return state.idToken;
+      }
+
+      if (typeof liff === 'undefined') {
+        throw new Error('LINE LIFF 尚未載入完成，請稍後再試');
+      }
+
+      await liff.init({
+        liffId: LIFF_ID,
+      });
+
+      if (!liff.isLoggedIn()) {
+        liff.login({
+          redirectUri: window.location.href,
+        });
+
+        throw new Error('正在重新登入 LINE，請稍後再操作');
+      }
+
+      let idToken = liff.getIDToken();
+
+      if (!idToken) {
+        const auth = await initLineLogin();
+
+        if (auth && auth.idToken) {
+          idToken = auth.idToken;
+          state.profile = auth.profile || state.profile;
+        }
+      }
+
+      if (!idToken) {
+        throw new Error('無法取得 LINE ID Token，請關閉頁面後重新開啟');
+      }
+
+      state.idToken = idToken;
+
+      return idToken;
+    }
+
     async function claimCoupon(memberCouponId) {
       if (state.couponActionLoading) {
         return;
@@ -2134,8 +2175,10 @@
 
         setFrontActionLoading('優惠券領取中...');
 
+        const idToken = await ensureFrontLineIdToken();
+
         await post('claimMemberCoupon', {
-          idToken: state.idToken,
+          idToken,
           memberCouponId,
         });
 
@@ -2182,8 +2225,10 @@
 
         setFrontActionLoading('優惠券使用中...');
 
+        const idToken = await ensureFrontLineIdToken();
+
         await post('useOwnMemberCoupon', {
-          idToken: state.idToken,
+          idToken,
           memberCouponId,
         });
 
