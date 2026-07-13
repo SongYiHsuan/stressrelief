@@ -3530,6 +3530,16 @@
       }
     });
 
+    document.addEventListener('visibilitychange', () => {
+      if (
+        document.visibilityState === 'visible' &&
+        !state.registrationInProgress
+      ) {
+        refreshMemberData();
+      }
+    });
+
+
     window.addEventListener('focus', () => {
       refreshMemberData({ silent: true });
     });
