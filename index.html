@@ -1655,6 +1655,55 @@
     }
 
 
+    function getMemberPointBalance(member) {
+      const source = member || {};
+
+      const candidates = [
+        source.storedValue,
+        source.points,
+        source.pointBalance,
+        source.balance,
+        source.walletBalance,
+      ];
+
+      for (const value of candidates) {
+        if (
+          value === undefined ||
+          value === null ||
+          String(value).trim() === ''
+        ) {
+          continue;
+        }
+
+        const numberValue = Number(
+          String(value).replace(/,/g, '')
+        );
+
+        if (Number.isFinite(numberValue)) {
+          return numberValue;
+        }
+      }
+
+      return 0;
+    }
+
+    function updateMemberPointDisplay() {
+      const pointElement =
+        document.getElementById('memberPointBalance');
+
+      if (!pointElement) {
+        return;
+      }
+
+      const pointBalance =
+        getMemberPointBalance(state.member);
+
+      pointElement.textContent =
+        '剩餘點數 ' +
+        pointBalance.toLocaleString('zh-TW');
+    }
+
+
     async function post(action, payload = {}) {
       if (!GAS_API_URL || GAS_API_URL.includes('你的')) {
         throw new Error('尚未設定 GAS_API_URL');
@@ -2047,6 +2096,8 @@
         });
 
         state.member = homeData.member || state.member;
+        updateMemberPointDisplay();
+
         state.activities = homeData.activities || [];
 
         if (Array.isArray(homeData.coupons)) {
@@ -2126,6 +2177,8 @@
         });
 
         state.member = homeData.member || state.member;
+        updateMemberPointDisplay();
+
         state.activities = homeData.activities || [];
 
         if (Array.isArray(homeData.coupons)) {
@@ -2241,6 +2294,7 @@
       state.lastRefreshedAt = Date.now();
 
       saveMemberCache();
+      updateMemberPointDisplay();
     }
 
     async function reloadHomeDataAndRender(targetTab) {
@@ -2266,7 +2320,7 @@
       const pictureUrl = escapeHtml(
         member.pictureUrl || 'https://placehold.co/160x160?text=會員'
       );
-      const points = Number(member.storedValue ?? member.points ?? 0);
+      const points = getMemberPointBalance(member);
       const memberCode = String(member.barcodeValue || member.memberId || '');
       const qrUrl =
         'https://api.qrserver.com/v1/create-qr-code/?size=520x520&margin=2&data=' +
@@ -2303,7 +2357,12 @@
 
                   <img class="avatar" src="${pictureUrl}" alt="會員頭像" loading="lazy" decoding="async" />
 
-                  <div class="points-pill">剩餘點數 ${points}</div>
+                  <div
+                    class="points-pill"
+                    id="memberPointBalance"
+                  >
+                    剩餘點數 ${points.toLocaleString('zh-TW')}
+                  </div>
                 </div>
 
                 <div class="member-card-back">
@@ -3216,96 +3275,256 @@
       };
     }
 
+    async function getFreshHomeDataForOpen(
+      idToken,
+      options = {}
+    ) {
+      const attempts = Number(
+        options.attempts ?? 5
+      );
+
+      const delay = Number(
+        options.delay ?? 280
+      );
+
+      const requireCoupon =
+        options.requireCoupon === true;
+
+      let latestData = null;
+      let lastError = null;
+
+      for (
+        let attempt = 1;
+        attempt <= attempts;
+        attempt += 1
+      ) {
+        try {
+          latestData = await post(
+            'getHomeData',
+            {
+              idToken,
+              cacheBust:
+                Date.now() + '-' + attempt,
+            }
+          );
+
+          const coupons = Array.isArray(
+            latestData?.coupons
+          )
+            ? latestData.coupons
+            : [];
+
+          if (
+            !requireCoupon ||
+            coupons.length > 0 ||
+            attempt === attempts
+          ) {
+            return latestData;
+          }
+        } catch (error) {
+          lastError = error;
+
+          console.warn(
+            'getFreshHomeDataForOpen 第 ' +
+              attempt +
+              ' 次失敗',
+            error
+          );
+        }
+
+        if (attempt < attempts) {
+          await new Promise((resolve) => {
+            window.setTimeout(
+              resolve,
+              delay * attempt
+            );
+          });
+        }
+      }
+
+      if (latestData) {
+        return latestData;
+      }
+
+      throw (
+        lastError ||
+        new Error('會員資料讀取失敗')
+      );
+    }
+
+
     async function boot() {
       const path = window.location.pathname;
 
-      if (path.endsWith('/pos-scan') || path.includes('/pos-scan')) {
+      if (
+        path.endsWith('/pos-scan') ||
+        path.includes('/pos-scan')
+      ) {
         renderStaffScanPage();
         return;
       }
 
-      if (path.endsWith('/admin') || path.includes('/admin')) {
+      if (
+        path.endsWith('/admin') ||
+        path.includes('/admin')
+      ) {
         renderAdminPage();
         return;
       }
 
+      const urlParams =
+        new URLSearchParams(
+          window.location.search
+        );
+
+      const requestedTab =
+        urlParams.get('tab') || state.tab || 'coupon';
+
+      const isCouponEntry =
+        requestedTab === 'coupon';
+
+      state.tab = requestedTab;
+
       const cached = readMemberCache();
 
-      if (cached && cached.member) {
+      // 一般開啟仍可先顯示快取。
+      // 從 LINE 優惠券按鈕進入時，不先畫空優惠券，
+      // 直接保留載入中並抓最新資料。
+      if (
+        cached &&
+        cached.member &&
+        !isCouponEntry
+      ) {
         state.loading = false;
         state.error = '';
         state.member = cached.member;
-        state.activities = cached.activities || [];
-        state.coupons = cached.coupons || [];
-        state.couponUseLogs = cached.couponUseLogs || [];
-        state.walletLogs = cached.walletLogs || [];
+        state.activities =
+          cached.activities || [];
+        state.coupons =
+          cached.coupons || [];
+        state.couponUseLogs =
+          cached.couponUseLogs || [];
+        state.walletLogs =
+          cached.walletLogs || [];
+
         render();
+      } else {
+        app.className = 'loading';
+        app.innerHTML =
+          isCouponEntry
+            ? '優惠券載入中...'
+            : '會員資料載入中...';
       }
 
       try {
-        const auth = await initLineLogin();
+        const auth =
+          await initLineLogin();
 
         if (!auth) {
           return;
         }
 
-        const bootData = await post('bootstrapMember', {
-          idToken: auth.idToken,
-          profile: auth.profile,
-        });
+        state.idToken = auth.idToken;
+        state.profile = auth.profile;
+
+        const bootData =
+          await post(
+            'bootstrapMember',
+            {
+              idToken: auth.idToken,
+              profile: auth.profile,
+            }
+          );
+
+        let homeData = null;
+
+        try {
+          homeData =
+            await getFreshHomeDataForOpen(
+              auth.idToken,
+              {
+                // 從 LINE 優惠券按鈕進入時，
+                // 短時間快速確認新券是否已寫入。
+                attempts:
+                  isCouponEntry ? 5 : 2,
+
+                delay:
+                  isCouponEntry ? 250 : 300,
+
+                requireCoupon:
+                  isCouponEntry,
+              }
+            );
+        } catch (homeError) {
+          console.warn(
+            '最新首頁資料取得失敗，改用基本資料',
+            homeError
+          );
+        }
 
         state.loading = false;
         state.error = '';
-        state.idToken = auth.idToken;
-        state.profile = auth.profile;
-        state.member = bootData.member;
-        state.activities = state.activities || [];
-        state.coupons = state.coupons || [];
-        state.couponUseLogs = state.couponUseLogs || [];
-        state.walletLogs = state.walletLogs || [];
 
-        render();
+        state.member =
+          homeData?.member ||
+          bootData?.member ||
+          cached?.member ||
+          null;
+
+        state.activities =
+          Array.isArray(homeData?.activities)
+            ? homeData.activities
+            : cached?.activities || [];
+
+        state.coupons =
+          Array.isArray(homeData?.coupons)
+            ? homeData.coupons
+            : cached?.coupons || [];
+
+        state.couponUseLogs =
+          Array.isArray(
+            homeData?.couponUseLogs
+          )
+            ? homeData.couponUseLogs
+            : cached?.couponUseLogs || [];
+
+        state.walletLogs =
+          Array.isArray(homeData?.walletLogs)
+            ? homeData.walletLogs
+            : cached?.walletLogs || [];
+
+        state.lastRefreshedAt =
+          Date.now();
+
         saveMemberCache();
 
-        post('getHomeData', {
-          idToken: auth.idToken,
-        })
-          .then(function (homeData) {
-            // 這個請求可能在使用者送出註冊前就已發出。
-            // 註冊中時不得用舊的 phoneVerified=false 覆蓋狀態。
-            if (state.registrationInProgress) {
-              console.warn(
-                '忽略註冊期間返回的舊 getHomeData 資料'
-              );
-              return;
-            }
-
-            state.member = homeData.member || bootData.member;
-            state.activities = homeData.activities || [];
-            state.coupons = homeData.coupons || [];
-            state.couponUseLogs = homeData.couponUseLogs || [];
-            state.walletLogs = homeData.walletLogs || [];
-            state.lastRefreshedAt = Date.now();
-            saveMemberCache();
-            render();
-          })
-          .catch(function (err) {
-            console.warn('背景載入活動 / 禮券失敗：', err);
-          });
+        // 最新會員、點數與優惠券都取得後，
+        // 再一次畫出完整首頁。
+        render();
       } catch (err) {
-        if (cached && cached.member) {
-          console.warn('背景更新會員資料失敗，但已使用快取：', err);
+        if (
+          cached &&
+          cached.member &&
+          !isCouponEntry
+        ) {
+          console.warn(
+            '背景更新會員資料失敗，保留快取',
+            err
+          );
+
           return;
         }
 
         setState({
           loading: false,
-          error: err.message || String(err),
+          error:
+            err.message ||
+            String(err),
         });
       }
     }
 
-    document.addEventListener('visibilitychange', () => {
+    document.addEventListener('visibilitychange' , () => {
       if (!document.hidden) {
         refreshMemberData({ silent: true });
       }
