@@ -3377,6 +3377,27 @@
       };
     }
 
+    async function postWithTimeout(
+      action,
+      payload = {},
+      timeoutMs = 8000
+    ) {
+      return await Promise.race([
+        post(action, payload),
+
+        new Promise((_, reject) => {
+          window.setTimeout(() => {
+            reject(
+              new Error(
+                action + ' 讀取逾時'
+              )
+            );
+          }, timeoutMs);
+        }),
+      ]);
+    }
+
+
     async function getFreshHomeDataForOpen(
       idToken,
       options = {}
@@ -3401,13 +3422,14 @@
         attempt += 1
       ) {
         try {
-          latestData = await post(
+          latestData = await postWithTimeout(
             'getHomeData',
             {
               idToken,
               cacheBust:
                 Date.now() + '-' + attempt,
-            }
+            },
+            8000
           );
 
           const coupons = Array.isArray(
@@ -3547,14 +3569,15 @@
               {
                 // 從 LINE 優惠券按鈕進入時，
                 // 短時間快速確認新券是否已寫入。
-                attempts:
-                  isCouponEntry ? 5 : 2,
+                // 首頁首次載入只抓一次，
+                // 避免使用者長時間停在載入畫面。
+                attempts: 1,
+                delay: 200,
 
-                delay:
-                  isCouponEntry ? 250 : 300,
-
+                // 不把優惠券寫入完成當成進首頁條件。
+                // 先進首頁，優惠券後續背景補上。
                 requireCoupon:
-                  isCouponEntry,
+                  false,
               }
             );
         } catch (homeError) {
@@ -3600,10 +3623,109 @@
 
         saveMemberCache();
 
-        // 最新會員、點數與優惠券都取得後，
-        // 再一次畫出完整首頁。
+        // 會員資料取得後立刻顯示首頁，
+        // 不等待優惠券寫入完成。
         render();
+
+        // 從 LINE 優惠券按鈕進入時，
+        // 背景快速補抓最新優惠券，不阻塞畫面。
+        if (isCouponEntry) {
+          (async () => {
+            for (
+              let attempt = 1;
+              attempt <= 6;
+              attempt += 1
+            ) {
+              try {
+                const freshData =
+                  await postWithTimeout(
+                    'getHomeData',
+                    {
+                      idToken: auth.idToken,
+                      cacheBust:
+                        Date.now() +
+                        '-coupon-' +
+                        attempt,
+                    },
+                    6000
+                  );
+
+                const freshCoupons =
+                  Array.isArray(
+                    freshData?.coupons
+                  )
+                    ? freshData.coupons
+                    : [];
+
+                applyHomeDataToState(
+                  freshData
+                );
+
+                if (
+                  document.getElementById(
+                    'content'
+                  )
+                ) {
+                  state.tab = 'coupon';
+                  updateMemberPointDisplay();
+                  syncTabButtons();
+                  renderContent();
+                }
+
+                if (freshCoupons.length > 0) {
+                  break;
+                }
+              } catch (error) {
+                console.warn(
+                  '優惠券背景更新第 ' +
+                    attempt +
+                    ' 次失敗',
+                  error
+                );
+              }
+
+              await new Promise(
+                (resolve) => {
+                  window.setTimeout(
+                    resolve,
+                    700 * attempt
+                  );
+                }
+              );
+            }
+          })();
+        }
       } catch (err) {
+        console.error(
+          'boot 載入失敗',
+          err
+        );
+
+        // 即使優惠券入口讀取失敗，
+        // 只要有快取會員就先進首頁，不停在載入畫面。
+        if (
+          cached &&
+          cached.member
+        ) {
+          state.loading = false;
+          state.error = '';
+          state.member =
+            cached.member;
+          state.activities =
+            cached.activities || [];
+          state.coupons =
+            cached.coupons || [];
+          state.couponUseLogs =
+            cached.couponUseLogs || [];
+          state.walletLogs =
+            cached.walletLogs || [];
+          state.tab =
+            requestedTab;
+
+          render();
+          return;
+        }
+
         if (
           cached &&
           cached.member &&
