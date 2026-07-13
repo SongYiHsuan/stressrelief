@@ -3550,10 +3550,45 @@
           }
         }
       } else {
-        app.className = 'loading';
-        app.innerHTML =
-          '會員資料載入中...';
+        // 手機內沒有快取時，也先顯示會員頁骨架，
+        // 不等待 LINE 登入及 Apps Script 回應。
+        state.loading = false;
+        state.error = '';
+        state.member = {
+          memberId: '',
+          barcodeValue: '',
+          displayName: '會員',
+          pictureUrl: '',
+          level: '解憂藥局會員',
+          storedValue: 0,
+          phone: '',
+          phoneVerified: true,
+        };
+        state.activities = [];
+        state.coupons = [];
+        state.couponUseLogs = [];
+        state.walletLogs = [];
+
+        renderHomePage();
+
+        const content =
+          document.getElementById('content');
+
+        if (content) {
+          content.innerHTML = `
+            <div class="front-action-loading">
+              <div class="front-action-spinner"></div>
+              <div>優惠券更新中...</div>
+            </div>
+          `;
+        }
       }
+
+      // 讓上方會員頁骨架先完成繪製，
+      // 下一個事件循環再開始 LINE 與後端工作。
+      await new Promise((resolve) => {
+        window.setTimeout(resolve, 0);
+      });
 
       try {
         const auth =
