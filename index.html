@@ -1581,6 +1581,7 @@
       refreshing: false,
       forceRefreshing: false,
       couponActionLoading: false,
+      registrationInProgress: false,
       couponPendingTasks: {},
       optimisticCouponIds: {}, 
       lastRefreshedAt: 0,
@@ -1714,6 +1715,12 @@
     }
 
     function render() {
+      // 註冊流程進行中時，保留「註冊中」畫面。
+      // 禁止 boot / 自動更新的舊資料重新覆蓋畫面。
+      if (state.registrationInProgress) {
+        return;
+      }
+
       const path = window.location.pathname;
 
       if (path.endsWith('/pos-scan') || path.includes('/pos-scan')) {
@@ -1797,6 +1804,10 @@
           msg.classList.add('show');
           return;
         }
+
+        // 先鎖住所有背景 render，避免舊的 getHomeData
+        // 把「註冊中」重新覆蓋成手機輸入畫面。
+        state.registrationInProgress = true;
 
         app.className = '';
         app.innerHTML = `
@@ -2013,13 +2024,18 @@
 
           saveMemberCache();
 
-          // 確認成功後直接進會員首頁。
+          // 後端已確認手機與 phoneVerified=true，
+          // 此時才解除鎖並進入會員首頁。
+          state.registrationInProgress = false;
           renderHomePage();
         } catch (err) {
           console.error(
             '會員註冊確認失敗',
             err
           );
+
+          // 已結束本次註冊確認流程，才允許畫面再次操作。
+          state.registrationInProgress = false;
 
           app.className = '';
           app.innerHTML = `
@@ -2095,6 +2111,7 @@
       if (
         !state.idToken ||
         state.forceRefreshing ||
+        state.registrationInProgress ||
         state.couponActionLoading ||
         Object.keys(state.couponPendingTasks || {}).length > 0
       ) {
@@ -3339,6 +3356,15 @@
           idToken: auth.idToken,
         })
           .then(function (homeData) {
+            // 這個請求可能在使用者送出註冊前就已發出。
+            // 註冊中時不得用舊的 phoneVerified=false 覆蓋狀態。
+            if (state.registrationInProgress) {
+              console.warn(
+                '忽略註冊期間返回的舊 getHomeData 資料'
+              );
+              return;
+            }
+
             state.member = homeData.member || bootData.member;
             state.activities = homeData.activities || [];
             state.coupons = homeData.coupons || [];
