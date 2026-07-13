@@ -3502,23 +3502,20 @@
         );
 
       const requestedTab =
-        urlParams.get('tab') || state.tab || 'coupon';
+        urlParams.get('tab') ||
+        state.tab ||
+        'coupon';
 
       const isCouponEntry =
         requestedTab === 'coupon';
 
       state.tab = requestedTab;
 
-      const cached = readMemberCache();
+      const cached =
+        readMemberCache();
 
-      // 一般開啟仍可先顯示快取。
-      // 從 LINE 優惠券按鈕進入時，不先畫空優惠券，
-      // 直接保留載入中並抓最新資料。
-      if (
-        cached &&
-        cached.member &&
-        !isCouponEntry
-      ) {
+      // 先顯示既有會員畫面，不等待優惠券 API。
+      if (cached && cached.member) {
         state.loading = false;
         state.error = '';
         state.member = cached.member;
@@ -3532,12 +3529,30 @@
           cached.walletLogs || [];
 
         render();
+
+        // LINE 優惠券入口若目前沒有券，
+        // 先在優惠券區塊顯示背景更新提示。
+        if (
+          isCouponEntry &&
+          Array.isArray(state.coupons) &&
+          state.coupons.length === 0
+        ) {
+          const content =
+            document.getElementById('content');
+
+          if (content) {
+            content.innerHTML = `
+              <div class="front-action-loading">
+                <div class="front-action-spinner"></div>
+                <div>優惠券更新中...</div>
+              </div>
+            `;
+          }
+        }
       } else {
         app.className = 'loading';
         app.innerHTML =
-          isCouponEntry
-            ? '優惠券載入中...'
-            : '會員資料載入中...';
+          '會員資料載入中...';
       }
 
       try {
@@ -3548,9 +3563,13 @@
           return;
         }
 
-        state.idToken = auth.idToken;
-        state.profile = auth.profile;
+        state.idToken =
+          auth.idToken;
 
+        state.profile =
+          auth.profile;
+
+        // bootstrap 只負責先取得會員基本資料。
         const bootData =
           await post(
             'bootstrapMember',
@@ -3560,182 +3579,258 @@
             }
           );
 
-        let homeData = null;
+        const bootMember =
+          bootData?.member ||
+          cached?.member ||
+          state.member ||
+          null;
 
-        try {
-          homeData =
-            await getFreshHomeDataForOpen(
-              auth.idToken,
-              {
-                // 從 LINE 優惠券按鈕進入時，
-                // 短時間快速確認新券是否已寫入。
-                // 首頁首次載入只抓一次，
-                // 避免使用者長時間停在載入畫面。
-                attempts: 1,
-                delay: 200,
-
-                // 不把優惠券寫入完成當成進首頁條件。
-                // 先進首頁，優惠券後續背景補上。
-                requireCoupon:
-                  false,
-              }
-            );
-        } catch (homeError) {
-          console.warn(
-            '最新首頁資料取得失敗，改用基本資料',
-            homeError
+        if (!bootMember) {
+          throw new Error(
+            '找不到會員資料'
           );
         }
 
+        // 會員資料一取得就先顯示會員頁面，
+        // 不等待優惠券、紀錄與餘額同步。
         state.loading = false;
         state.error = '';
+        state.member = {
+          ...bootMember,
 
-        state.member =
-          homeData?.member ||
-          bootData?.member ||
-          cached?.member ||
-          null;
+          // 已完成手機註冊時，避免舊快取 false
+          // 再次把畫面切回註冊頁。
+          phoneVerified:
+            bootMember.phoneVerified === true ||
+            bootMember.phoneVerified === 'true' ||
+            cached?.member?.phoneVerified === true ||
+            cached?.member?.phoneVerified === 'true',
+        };
 
         state.activities =
-          Array.isArray(homeData?.activities)
-            ? homeData.activities
-            : cached?.activities || [];
+          cached?.activities ||
+          state.activities ||
+          [];
 
         state.coupons =
-          Array.isArray(homeData?.coupons)
-            ? homeData.coupons
-            : cached?.coupons || [];
+          cached?.coupons ||
+          state.coupons ||
+          [];
 
         state.couponUseLogs =
-          Array.isArray(
-            homeData?.couponUseLogs
-          )
-            ? homeData.couponUseLogs
-            : cached?.couponUseLogs || [];
+          cached?.couponUseLogs ||
+          state.couponUseLogs ||
+          [];
 
         state.walletLogs =
-          Array.isArray(homeData?.walletLogs)
-            ? homeData.walletLogs
-            : cached?.walletLogs || [];
-
-        state.lastRefreshedAt =
-          Date.now();
+          cached?.walletLogs ||
+          state.walletLogs ||
+          [];
 
         saveMemberCache();
-
-        // 會員資料取得後立刻顯示首頁，
-        // 不等待優惠券寫入完成。
         render();
 
-        // 從 LINE 優惠券按鈕進入時，
-        // 背景快速補抓最新優惠券，不阻塞畫面。
-        if (isCouponEntry) {
-          (async () => {
-            for (
-              let attempt = 1;
-              attempt <= 6;
-              attempt += 1
-            ) {
-              try {
-                const freshData =
-                  await postWithTimeout(
-                    'getHomeData',
-                    {
-                      idToken: auth.idToken,
-                      cacheBust:
-                        Date.now() +
-                        '-coupon-' +
-                        attempt,
-                    },
-                    6000
-                  );
+        // 優惠券分頁目前沒有資料時，只更新內容區塊。
+        if (
+          isCouponEntry &&
+          Array.isArray(state.coupons) &&
+          state.coupons.length === 0
+        ) {
+          const content =
+            document.getElementById('content');
 
-                const freshCoupons =
-                  Array.isArray(
-                    freshData?.coupons
-                  )
-                    ? freshData.coupons
-                    : [];
+          if (content) {
+            content.innerHTML = `
+              <div class="front-action-loading">
+                <div class="front-action-spinner"></div>
+                <div>優惠券更新中...</div>
+              </div>
+            `;
+          }
+        }
 
-                applyHomeDataToState(
-                  freshData
+        // ====================================================
+        // 背景載入最新會員點數、優惠券及紀錄
+        // 不阻塞會員頁面
+        // ====================================================
+        void (async () => {
+          const maxAttempts =
+            isCouponEntry ? 8 : 3;
+
+          for (
+            let attempt = 1;
+            attempt <= maxAttempts;
+            attempt += 1
+          ) {
+            try {
+              const homeData =
+                await post(
+                  'getHomeData',
+                  {
+                    idToken:
+                      auth.idToken,
+
+                    cacheBust:
+                      Date.now() +
+                      '-' +
+                      attempt,
+                  }
                 );
 
-                if (
-                  document.getElementById(
-                    'content'
-                  )
-                ) {
-                  state.tab = 'coupon';
-                  updateMemberPointDisplay();
-                  syncTabButtons();
-                  renderContent();
-                }
-
-                if (freshCoupons.length > 0) {
-                  break;
-                }
-              } catch (error) {
-                console.warn(
-                  '優惠券背景更新第 ' +
-                    attempt +
-                    ' 次失敗',
-                  error
+              if (!homeData) {
+                throw new Error(
+                  '沒有取得會員資料'
                 );
               }
 
+              // 保留已驗證狀態，避免舊資料跳回註冊頁。
+              if (homeData.member) {
+                state.member = {
+                  ...state.member,
+                  ...homeData.member,
+
+                  phoneVerified:
+                    homeData.member.phoneVerified === true ||
+                    homeData.member.phoneVerified === 'true' ||
+                    state.member?.phoneVerified === true ||
+                    state.member?.phoneVerified === 'true',
+                };
+              }
+
+              if (
+                Array.isArray(
+                  homeData.activities
+                )
+              ) {
+                state.activities =
+                  homeData.activities;
+              }
+
+              if (
+                Array.isArray(
+                  homeData.coupons
+                )
+              ) {
+                state.coupons =
+                  sortCouponsForDisplay(
+                    homeData.coupons
+                  );
+              }
+
+              if (
+                Array.isArray(
+                  homeData.couponUseLogs
+                )
+              ) {
+                state.couponUseLogs =
+                  homeData.couponUseLogs;
+              }
+
+              if (
+                Array.isArray(
+                  homeData.walletLogs
+                )
+              ) {
+                state.walletLogs =
+                  homeData.walletLogs;
+              }
+
+              state.lastRefreshedAt =
+                Date.now();
+
+              saveMemberCache();
+
+              // 即時更新卡片右上角餘額。
+              if (
+                typeof updateMemberPointDisplay ===
+                'function'
+              ) {
+                updateMemberPointDisplay();
+              }
+
+              // 只刷新內容，不重畫整個會員卡與頁面。
+              if (
+                document.getElementById(
+                  'content'
+                )
+              ) {
+                state.tab =
+                  requestedTab;
+
+                syncTabButtons();
+                renderContent();
+              } else {
+                render();
+              }
+
+              const receivedCoupons =
+                Array.isArray(
+                  homeData.coupons
+                )
+                  ? homeData.coupons
+                  : [];
+
+              // 一般入口取得資料一次就結束。
+              if (!isCouponEntry) {
+                break;
+              }
+
+              // LINE 優惠券入口抓到新券後就結束。
+              if (
+                receivedCoupons.length > 0
+              ) {
+                break;
+              }
+            } catch (error) {
+              console.warn(
+                '背景讀取會員資料第 ' +
+                  attempt +
+                  ' 次失敗',
+                error
+              );
+            }
+
+            if (attempt < maxAttempts) {
               await new Promise(
                 (resolve) => {
                   window.setTimeout(
                     resolve,
-                    700 * attempt
+                    Math.min(
+                      500 * attempt,
+                      2000
+                    )
                   );
                 }
               );
             }
-          })();
-        }
+          }
+
+          // 多次仍沒有優惠券時，改成正常空狀態，
+          // 不會永久顯示更新中。
+          if (
+            isCouponEntry &&
+            Array.isArray(state.coupons) &&
+            state.coupons.length === 0 &&
+            document.getElementById(
+              'content'
+            )
+          ) {
+            renderContent();
+          }
+        })();
       } catch (err) {
         console.error(
-          'boot 載入失敗',
+          'boot failed',
           err
         );
 
-        // 即使優惠券入口讀取失敗，
-        // 只要有快取會員就先進首頁，不停在載入畫面。
+        // 已有快取會員時保留目前畫面。
         if (
           cached &&
           cached.member
         ) {
           state.loading = false;
           state.error = '';
-          state.member =
-            cached.member;
-          state.activities =
-            cached.activities || [];
-          state.coupons =
-            cached.coupons || [];
-          state.couponUseLogs =
-            cached.couponUseLogs || [];
-          state.walletLogs =
-            cached.walletLogs || [];
-          state.tab =
-            requestedTab;
-
-          render();
-          return;
-        }
-
-        if (
-          cached &&
-          cached.member &&
-          !isCouponEntry
-        ) {
-          console.warn(
-            '背景更新會員資料失敗，保留快取',
-            err
-          );
-
           return;
         }
 
