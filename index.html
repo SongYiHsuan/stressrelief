@@ -1734,28 +1734,130 @@
         throw new Error('尚未設定 LIFF_ID');
       }
 
-      await liff.init({
-        liffId: LIFF_ID,
-      });
+      const urlParams =
+        new URLSearchParams(
+          window.location.search
+        );
 
-      if (!liff.isLoggedIn()) {
-        liff.login({
-          redirectUri: window.location.href,
+      const requestedTab =
+        urlParams.get('tab') ||
+        state.tab ||
+        'coupon';
+
+      const cleanRedirectUrl =
+        window.location.origin +
+        window.location.pathname +
+        '?tab=' +
+        encodeURIComponent(requestedTab);
+
+      const liffEntryUrl =
+        'https://liff.line.me/' +
+        LIFF_ID +
+        '?tab=' +
+        encodeURIComponent(requestedTab);
+
+      try {
+        await liff.init({
+          liffId: LIFF_ID,
+
+          // 從一般瀏覽器開啟時，自動執行 LINE Login。
+          withLoginOnExternalBrowser: true,
         });
+
+        if (!liff.isLoggedIn()) {
+          liff.login({
+            redirectUri: cleanRedirectUrl,
+          });
+
+          return null;
+        }
+
+        const profile =
+          await liff.getProfile();
+
+        const idToken =
+          liff.getIDToken();
+
+        if (!idToken) {
+          throw new Error(
+            '無法取得 LINE ID Token，請重新登入'
+          );
+        }
+
+        // 成功後清除重新登入保護記號。
+        sessionStorage.removeItem(
+          'stressrelief_line_relogin'
+        );
+
+        return {
+          profile,
+          idToken,
+        };
+      } catch (error) {
+        const errorText = String(
+          error?.message ||
+          error?.code ||
+          error ||
+          ''
+        );
+
+        const tokenExpired =
+          /access token expired/i.test(errorText) ||
+          /token expired/i.test(errorText) ||
+          /idtoken expired/i.test(errorText) ||
+          /invalid.*token/i.test(errorText);
+
+        if (!tokenExpired) {
+          throw error;
+        }
+
+        console.warn(
+          'LINE 登入憑證已過期，準備重新登入',
+          error
+        );
+
+        const alreadyRetried =
+          sessionStorage.getItem(
+            'stressrelief_line_relogin'
+          ) === '1';
+
+        if (alreadyRetried) {
+          sessionStorage.removeItem(
+            'stressrelief_line_relogin'
+          );
+
+          throw new Error(
+            'LINE 登入狀態已過期，請關閉頁面後重新點擊優惠券'
+          );
+        }
+
+        sessionStorage.setItem(
+          'stressrelief_line_relogin',
+          '1'
+        );
+
+        try {
+          if (
+            typeof liff !== 'undefined' &&
+            liff.isLoggedIn()
+          ) {
+            liff.logout();
+          }
+        } catch (logoutError) {
+          console.warn(
+            'LINE logout failed',
+            logoutError
+          );
+        }
+
+        // 重新由 LIFF 正式入口開啟，
+        // 不再停留在已過期的 GitHub 瀏覽器工作階段。
+        window.location.replace(
+          liffEntryUrl
+        );
+
         return null;
       }
-
-      const profile = await liff.getProfile();
-      const idToken = liff.getIDToken();
-
-      if (!idToken) {
-        throw new Error('無法取得 LINE ID Token，請確認 LIFF scope 有 openid/profile');
-      }
-
-      return {
-        profile,
-        idToken,
-      };
     }
 
     function setState(patch) {
